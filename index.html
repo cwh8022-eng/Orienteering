@@ -107,7 +107,7 @@
     <ol class="list-decimal ps-5 space-y-1 text-slate-700">
       <li>先看「拍照目標一覽」，確認各編號外觀。</li>
       <li>於關卡列表點選編號 → 開啟相機自拍並拍下標的物。</li>
-      <li>AI 辨識通過後自動上傳到 Google Drive（作為教師檢核）。</li>
+      <li>AI 辨識通過後自動上傳到 Google Drive（教師檢核）。</li>
       <li>進度儲存在本機；集滿 25 枚徽章完成挑戰。</li>
     </ol>
     <div class="mt-4 text-right"><button class="px-3 py-2 rounded-xl bg-[var(--accent)] text-white" onclick="toggleHow(false)">我知道了</button></div>
@@ -144,14 +144,13 @@
 </div>
 
 <script>
-/* ======= 你要填的設定 ======= */
-const WEB_APP_URL = 'YOUR_APPS_SCRIPT_WEB_APP_URL_HERE'; // <- 貼 Apps Script 部署網址
+/* ======= 已替你填好的設定 ======= */
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyHjLdgXAkfoG5XUkMwOlJsJZ874eSgf-rOkzJtsugrYjsB0uxGa8oybeX1e2o7Vzcxcw/exec';
+/* ================================= */
+
 const MODEL_URL   = '';      // Teachable Machine 模型資料夾（可先留空：用 DEMO 規則）
 const THRESHOLD   = 0.70;    // AI 通過門檻
-/* =========================== */
-
-// 關卡只顯示編號；label 對應模型 className（自己訓練時用）
-const POINTS = Array.from({length:25}, (_,i)=>({ id:i+1, label:`P${i+1}` }));
+const POINTS = Array.from({length:25}, (_,i)=>({ id:i+1, label:`P${i+1}` })); // 只顯示編號
 
 let model = null;
 let currentPoint = null;
@@ -215,7 +214,7 @@ function toggleTask(show){
   }
 }
 
-/* 產生 5×5 關卡 */
+/* 5×5 關卡 */
 function renderPOIList(){
   const box = document.getElementById("poiList");
   box.innerHTML = "";
@@ -308,7 +307,7 @@ async function runCheckAndUpload(){
     const hit = preds.find(p => p.className === target);
     pass = (hit ? hit.probability : 0) >= THRESHOLD;
   }else{
-    // DEMO：檔名含 P{id} 視為通過
+    // DEMO：檔名含 P{id} 視為通過（先跑流程用）
     const token = (currentPoint?.label || "").toLowerCase();
     pass = file.name.toLowerCase().includes(token);
   }
