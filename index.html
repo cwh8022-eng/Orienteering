@@ -3,8 +3,11 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>淡江大學定向運動闖關挑戰（先測上傳版）</title>
+<title>淡江大學定向運動闖關挑戰（先測上傳版｜JSON 模式）</title>
+
+<!-- 使用你本機的樣式檔（無需 CDN） -->
 <link rel="stylesheet" href="./styles.css" />
+
 <style>
   :root { --accent:#f97316; --ok:#22c55e; }
   .pill{
@@ -16,6 +19,9 @@
   .badge.done{ border-style:solid; background:#f0fdf4; }
   .modal-mask{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:50; }
   .modal-card{ width:min(560px,92vw); background:#fff; border-radius:1rem; padding:1rem; box-shadow:0 20px 60px rgba(0,0,0,.25) }
+  /* 預覽與彈窗滾動修正（避免按鈕被擠掉） */
+  #taskModal .modal-card{ max-height:90vh; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  #previewImg{ width:100%; height:auto; max-height:16rem; object-fit:contain; }
 </style>
 </head>
 <body class="bg-orange-50/40 text-slate-800">
@@ -23,7 +29,7 @@
   <div class="w-12 h-12 rounded-2xl bg-[var(--accent)] text-white grid place-items-center font-extrabold">TKU</div>
   <div>
     <h1 class="text-2xl md:text-3xl font-extrabold">淡江大學定向運動闖關挑戰</h1>
-    <p class="text-slate-600">先測「自拍→上傳到 Google Drive」流程；之後再接上 AI 模型。</p>
+    <p class="text-slate-600">先測「自拍→上傳到 Google Drive」流程（JSON 上傳）；之後再接上 AI 模型。</p>
   </div>
   <div class="ms-auto flex gap-2">
     <button id="howBtn" class="px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50">規則說明</button>
@@ -124,207 +130,4 @@
         <p class="text-xs text-slate-500 mt-1">手機會直接開啟相機；請確保本人入鏡。</p>
       </div>
       <div id="previewWrap" class="mt-3 hidden">
-        <img id="previewImg" class="max-h-64 max-w-full object-contain rounded-xl border border-slate-200" alt="預覽"/>
-      </div>
-      <div class="mt-3 flex flex-wrap gap-2">
-        <button id="checkBtn" class="px-3 py-2 rounded-xl bg-[var(--accent)] text-white disabled:opacity-50" disabled>上傳到 Google Drive</button>
-        <button class="px-3 py-2 rounded-xl bg-white border border-slate-200" onclick="toggleTask(false)">稍後再試</button>
-      </div>
-      <div id="resultBox" class="mt-3 hidden">
-        <div id="resultText" class="text-sm"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-/* ======= 你的 Web App URL（已填好） ======= */
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyHjLdgXAkfoG5XUkMwOlJsJZ874eSgf-rOkzJtsugrYjsB0uxGa8oybeX1e2o7Vzcxcw/exec';
-/* ========================================= */
-
-const POINTS = Array.from({length:25}, (_,i)=>({ id:i+1, label:`P${i+1}` })); // 只顯示編號；label 預留
-let currentPoint = null;
-const STORAGE_KEY = "tku_orienteering_progress_v1";
-const SID_KEY = "tku_orienteering_sid";
-
-/* 初始化 */
-document.addEventListener("DOMContentLoaded", () => {
-  renderPOIList();
-  renderBadges();
-  updateProgressUI();
-  bindUI();
-  loadSID();
-  setTimeout(()=>toggleHow(true), 400);
-});
-
-function bindUI(){
-  document.getElementById("startBtn").addEventListener("click", () => {
-    window.scrollTo({ top: document.getElementById("poiList").offsetTop - 16, behavior:"smooth" });
-  });
-  document.getElementById("badgesBtn").addEventListener("click", () => {
-    window.scrollTo({ top: document.getElementById("badgeGrid").offsetTop - 16, behavior:"smooth" });
-  });
-  document.getElementById("resetBtn").addEventListener("click", () => {
-    if(confirm("確定要清除本機進度？")) {
-      localStorage.removeItem(STORAGE_KEY);
-      renderPOIList(); renderBadges(); updateProgressUI();
-    }
-  });
-  document.getElementById("howBtn").addEventListener("click", () => toggleHow(true));
-  document.getElementById("idBtn").addEventListener("click", promptSID);
-  document.getElementById("imageInput").addEventListener("change", handleFileChange);
-  document.getElementById("checkBtn").addEventListener("click", runUploadOnly);
-}
-
-function loadSID(){
-  const sid = localStorage.getItem(SID_KEY) || "";
-  document.getElementById("sidVal").textContent = sid || "（未設定）";
-  if(!sid) setTimeout(promptSID, 500);
-}
-function promptSID(){
-  const old = localStorage.getItem(SID_KEY) || "";
-  const v = prompt("請輸入你的學號（或識別 ID）：", old);
-  if (v !== null) {
-    localStorage.setItem(SID_KEY, v.trim());
-    document.getElementById("sidVal").textContent = v.trim() || "（未設定）";
-  }
-}
-
-function toggleHow(show){ document.getElementById("howModal").style.display = show ? "flex" : "none"; }
-function toggleTask(show){
-  const mask = document.getElementById("taskModal");
-  mask.style.display = show ? "flex" : "none";
-  if(!show){
-    document.getElementById("imageInput").value = "";
-    document.getElementById("previewWrap").classList.add("hidden");
-    document.getElementById("resultBox").classList.add("hidden");
-    document.getElementById("checkBtn").disabled = true;
-    currentPoint = null;
-  }
-}
-
-/* 5×5 關卡 */
-function renderPOIList(){
-  const box = document.getElementById("poiList");
-  box.innerHTML = "";
-  const doneSet = getProgressSet();
-  POINTS.forEach(p=>{
-    const btn = document.createElement("button");
-    btn.className = "pill" + (doneSet.has(p.id) ? " done" : "");
-    btn.textContent = `#${p.id}`;
-    btn.addEventListener("click", ()=>openTask(p));
-    box.appendChild(btn);
-  });
-}
-
-/* 徽章牆 */
-function renderBadges(){
-  const grid = document.getElementById("badgeGrid");
-  grid.innerHTML = "";
-  const doneSet = getProgressSet();
-  POINTS.forEach(p=>{
-    const card = document.createElement("div");
-    card.className = "badge " + (doneSet.has(p.id) ? "done" : "");
-    card.innerHTML = `
-      <div class="font-bold">#${p.id}</div>
-      <div class="mt-2">
-        ${doneSet.has(p.id)?'<span class="text-green-600 text-sm">✅ 已獲得</span>':'<span class="text-slate-400 text-sm">🔒 未解鎖</span>'}
-      </div>`;
-    grid.appendChild(card);
-  });
-}
-
-/* 進度 */
-function getProgressSet(){ try{ return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]")); } catch{ return new Set(); } }
-function setProgressSet(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(s))); }
-function addProgress(id){
-  const s = getProgressSet(); s.add(id); setProgressSet(s);
-  renderPOIList(); renderBadges(); updateProgressUI();
-}
-function updateProgressUI(){
-  const count = getProgressSet().size;
-  const percent = Math.round((count / POINTS.length) * 100);
-  document.getElementById("progressBar").style.width = percent + "%";
-  document.getElementById("progressText").textContent = `已完成 ${count} / ${POINTS.length}`;
-}
-
-/* 任務流程 */
-function openTask(p){
-  currentPoint = p;
-  document.getElementById("taskTitle").textContent = `#${p.id}`;
-  document.getElementById("taskSubtitle").textContent = `請自拍並拍下此編號的標的物（目前不驗證 AI）`;
-  toggleTask(true);
-}
-function handleFileChange(e){
-  const file = e.target.files[0];
-  if(!file) return;
-  const url = URL.createObjectURL(file);
-  document.getElementById("previewImg").src = url;
-  document.getElementById("previewWrap").classList.remove("hidden");
-  document.getElementById("resultBox").classList.add("hidden");
-  document.getElementById("checkBtn").disabled = false;
-}
-
-/* 上傳：同送 multipart + Base64 後備，避免 GAS 收不到 e.files.file */
-async function runUploadOnly(){
-  const info = document.getElementById("resultText");
-  const box  = document.getElementById("resultBox");
-  box.classList.remove("hidden");
-
-  const sid = localStorage.getItem(SID_KEY) || "";
-  if(!sid){ alert("請先設定學號"); return promptSID(); }
-
-  const fileEl = document.getElementById("imageInput");
-  const file = fileEl.files[0];
-  if(!file){ info.textContent = "請先選擇照片"; return; }
-
-  if (file.size > 20 * 1024 * 1024) {
-    info.textContent = "檔案過大（>20MB），請壓縮後再上傳。";
-    return;
-  }
-
-  info.textContent = "正在上傳到 Google Drive…";
-
-  try{
-    const fileBase64 = await new Promise((resolve, reject)=>{
-      const fr = new FileReader();
-      fr.onload = () => resolve(fr.result); // dataURL
-      fr.onerror = reject;
-      fr.readAsDataURL(file);
-    });
-
-    const fd = new FormData();
-    fd.append('sid', sid);
-    fd.append('pointId', currentPoint.id);
-    fd.append('label', currentPoint.label);
-    fd.append('file', file, file.name);
-    fd.append('fileBase64', fileBase64);
-    fd.append('fileType', file.type || 'image/jpeg');
-
-    const res = await fetch(WEB_APP_URL, { method:'POST', body: fd, redirect: 'follow' });
-
-    let json = null, text = '';
-    try { json = await res.clone().json(); } catch (_){ try { text = await res.text(); } catch(__){} }
-
-    if (!res.ok) {
-      info.innerHTML = `❌ 伺服器狀態 ${res.status}。<br><pre class="text-xs whitespace-pre-wrap">${text || '(無文字內容)'}</pre>`;
-      return;
-    }
-
-    if (json && json.ok) {
-      info.innerHTML = `✅ 上傳完成！教師可於 Drive 檢核。<br><a class="text-blue-600 underline" target="_blank" href="${json.url}">在雲端開啟</a>`;
-      addProgress(currentPoint.id);
-    } else if (text && text.startsWith('{') && text.includes('"ok":true')) {
-      info.innerHTML = `✅ 上傳完成！（解析例外，但伺服器回傳成功）`;
-      addProgress(currentPoint.id);
-    } else {
-      info.innerHTML = `⚠️ 上傳失敗。<br><pre class="text-xs whitespace-pre-wrap">${text || JSON.stringify(json) || '（無明確錯誤）'}</pre>`;
-    }
-  }catch(err){
-    console.error(err);
-    info.innerHTML = `⚠️ 網路/跨網域例外：${String(err)}`;
-  }
-}
-</script>
-</body>
-</html>
+        <img id="previewImg" class="rounded-xl border border-slate-200" alt="預覽"
