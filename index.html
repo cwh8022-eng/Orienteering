@@ -5,12 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>淡江大學定向運動闖關挑戰｜首頁</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- 可選：Icon -->
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 24 24'%3E%3Cpath fill='%23f97316' d='M11 21q-.425 0-.713-.288T10 20v-2H8q-.825 0-1.413-.588T6 16v-3.175q-1.2-.35-2.1-1.3T3 9V7q0-.825.588-1.413T5 5h4.35q.3-.9 1.05-1.45T12 3q.9 0 1.65.55T14.7 5H19q.825 0 1.413.588T21 7v2q0 1.3-.9 2.25T18 12.825V16q0 .825-.588 1.413T16 18h-2v2q0 .425-.288.713T13 21zm1-15q.425 0 .713-.288T13 5t-.288-.712T12 4t-.712.288T11 5t.288.713T12 6'/%3E%3C/svg%3E"/>
-  <!-- TM Image（影像分類）-->
   <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
   <style>
-    /* 地圖容器讓點位用百分比定位（響應式） */
     .map-wrap { position: relative; }
     .map-wrap img { width: 100%; height: auto; display:block; }
     .poi {
@@ -23,361 +19,75 @@
       display:flex; align-items:center; justify-content:center;
       box-shadow: 0 6px 16px rgba(249,115,22,.35);
       cursor: pointer;
-      transition: transform .12s ease, box-shadow .12s ease;
     }
-    .poi:hover { transform: translate(-50%, -50%) scale(1.06); }
-    .poi.done { background:#22c55e; box-shadow: 0 6px 16px rgba(34,197,94,.35); }
-    /* 徽章方塊 */
-    .badge { border:1px dashed #e5e7eb; border-radius: .75rem; padding:.6rem; text-align:center; font-size:.85rem }
-    .badge.done{ border-style:solid; background:#f0fdf4; }
-    /* Modal */
-    .modal-mask { position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:50; }
-    .modal-card { width:min(560px,92vw); background:#fff; border-radius:1rem; padding:1rem; box-shadow:0 20px 60px rgba(0,0,0,.25) }
+    .poi.done { background:#22c55e; }
   </style>
 </head>
 <body class="bg-orange-50/40 text-slate-800">
-  <!-- Header -->
-  <header class="max-w-6xl mx-auto px-4 py-6 flex items-center gap-4">
-    <div class="w-12 h-12 rounded-2xl bg-orange-500 text-white grid place-items-center font-extrabold">TKU</div>
-    <div>
-      <h1 class="text-2xl md:text-3xl font-extrabold">淡江大學定向運動闖關挑戰</h1>
-      <p class="text-slate-600">找到校園 25 個秘密標的物，拍照上傳讓 AI 辨識，蒐集全部徽章！</p>
-    </div>
-    <div class="ms-auto">
-      <button id="howBtn" class="px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50">規則說明</button>
-    </div>
+  <header class="max-w-6xl mx-auto px-4 py-6">
+    <h1 class="text-2xl font-extrabold">淡江大學定向運動闖關挑戰</h1>
+    <p class="text-slate-600">找到 25 個校園標的物，上傳照片讓 AI 辨識，解鎖所有徽章！</p>
   </header>
-
-  <!-- 進度 / 動作列 -->
-  <section class="max-w-6xl mx-auto px-4">
-    <div class="grid md:grid-cols-3 gap-4 items-stretch">
-      <div class="col-span-2 bg-white rounded-2xl p-4 border border-slate-200">
-        <div class="flex items-center justify-between mb-2">
-          <h2 class="font-bold">我的闖關進度</h2>
-          <button id="resetBtn" class="text-sm text-slate-500 hover:text-red-600" title="清除本機進度">清除進度</button>
-        </div>
-        <div class="w-full bg-slate-100 rounded-xl h-3">
-          <div id="progressBar" class="bg-orange-500 h-3 rounded-xl" style="width:0%"></div>
-        </div>
-        <p id="progressText" class="text-sm mt-2 text-slate-600">已完成 0 / 25</p>
-      </div>
-
-      <div class="bg-white rounded-2xl p-4 border border-slate-200">
-        <h2 class="font-bold mb-2">快速動作</h2>
-        <div class="flex flex-wrap gap-2">
-          <button id="startBtn" class="px-3 py-2 rounded-xl bg-orange-500 text-white hover:bg-orange-600">開始挑戰</button>
-          <button id="badgesBtn" class="px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50">我的徽章</button>
-        </div>
-        <p class="text-xs text-slate-500 mt-3">提示：點擊地圖上的橘色圓點即可上傳照片闖關。</p>
-      </div>
-    </div>
-  </section>
 
   <!-- 地圖區 -->
   <section class="max-w-6xl mx-auto px-4 mt-6">
     <div class="bg-white rounded-2xl p-3 border border-slate-200">
-      <div class="flex items-center gap-3 mb-3">
-        <h2 class="font-bold">校園地圖</h2>
-        <span class="text-xs text-slate-500">（點選任一關卡點位開始上傳與辨識）</span>
-      </div>
+      <h2 class="font-bold mb-3">校園地圖</h2>
       <div id="mapWrap" class="map-wrap">
-        <!-- 請將你的地圖圖檔放到 ./assets/tku_map.jpg 或改 src -->
+        <!-- 地圖圖片 -->
         <img id="campusMap" src="assets/tku_map.jpg" alt="Tamkang University Orienteering Map" />
-        <!-- 點位會由 JS 依據座標陣列繪製 -->
       </div>
-    </div>
-    <p class="text-xs text-slate-500 mt-2">
-      ※ 點位座標採百分比定位，請依實際需要到程式中的 <code>POINTS</code> 陣列微調 <code>x</code>/<code>y</code>。
-    </p>
-  </section>
-
-  <!-- 徽章牆 -->
-  <section class="max-w-6xl mx-auto px-4 mt-6 mb-20">
-    <div class="bg-white rounded-2xl p-4 border border-slate-200">
-      <div class="flex items-center gap-3 mb-3">
-        <h2 class="font-bold">徽章收集</h2>
-        <span class="text-xs text-slate-500">蒐集 25 枚徽章，即完成最終挑戰！</span>
-      </div>
-      <div id="badgeGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 gap-3"></div>
     </div>
   </section>
-
-  <!-- 規則 Modal -->
-  <div id="howModal" class="modal-mask">
-    <div class="modal-card">
-      <div class="flex items-center justify-between mb-2">
-        <h3 class="font-bold text-lg">遊戲規則</h3>
-        <button class="text-slate-500" onclick="toggleHow(false)">✕</button>
-      </div>
-      <ol class="list-decimal ps-5 space-y-1 text-slate-700">
-        <li>在地圖上點選任一關卡點。</li>
-        <li>前往該點位，拍攝該點<strong>指定標的物</strong>（或上傳之前拍的照片）。</li>
-        <li>系統會使用 AI（Teachable Machine）辨識是否符合該點位的標籤。</li>
-        <li>通過後即可解鎖該點徽章，進度會儲存在本機。</li>
-        <li>集滿 25 枚徽章即可完成挑戰！</li>
-      </ol>
-      <div class="mt-3 text-sm text-slate-500">
-        ※ 管理者可在程式內設定：模型網址、各點位對應標籤、以及點位座標。
-      </div>
-      <div class="mt-4 text-right">
-        <button class="px-3 py-2 rounded-xl bg-orange-500 text-white" onclick="toggleHow(false)">我知道了</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 上傳 / 辨識 Modal -->
-  <div id="taskModal" class="modal-mask">
-    <div class="modal-card">
-      <div class="flex items-start justify-between gap-3">
-        <div>
-          <h3 id="taskTitle" class="font-bold text-lg">關卡</h3>
-          <p id="taskSubtitle" class="text-sm text-slate-500">請上傳指定標的物照片</p>
-        </div>
-        <button class="text-slate-500" onclick="toggleTask(false)">✕</button>
-      </div>
-
-      <div class="mt-3">
-        <div class="rounded-xl border border-dashed border-slate-300 p-3">
-          <input id="imageInput" type="file" accept="image/*;capture=camera" class="block w-full text-sm" />
-          <p class="text-xs text-slate-500 mt-1">可直接使用手機相機拍照或從相簿選擇。</p>
-        </div>
-        <div id="previewWrap" class="mt-3 hidden">
-          <img id="previewImg" class="max-h-64 rounded-xl border border-slate-200" alt="預覽"/>
-        </div>
-        <div class="mt-3 flex flex-wrap gap-2">
-          <button id="checkBtn" class="px-3 py-2 rounded-xl bg-orange-500 text-white disabled:opacity-50" disabled>開始辨識</button>
-          <button class="px-3 py-2 rounded-xl bg-white border border-slate-200" onclick="toggleTask(false)">稍後再試</button>
-        </div>
-        <div id="resultBox" class="mt-3 hidden">
-          <div id="resultText" class="text-sm"></div>
-        </div>
-      </div>
-    </div>
-  </div>
 
 <script>
-/* ========= 管理者可調整區 ========= */
-// 1) 你的 Teachable Machine 影像模型網址（匯出後的 model.json 所在資料夾）
-const MODEL_URL = ""; // 例如 "https://teachablemachine.withgoogle.com/models/XXXX/"
-// 2) 25 個點位設定：名稱 / 對應 AI 標籤（className）/ 座標（%）
+/* ========= 你的設定 ========= */
+// Teachable Machine 模型網址（訓練好再填）
+const MODEL_URL = "";
+
+// 25 個點位（中文名稱 + 英文標籤 + 地圖座標位置）
 const POINTS = [
-  // x, y 為相對地圖圖片的百分比座標（請依實際位置微調）
-  {id:1,  name:"關卡 1",  label:"P1",  x:12,  y:82},
-  {id:2,  name:"關卡 2",  label:"P2",  x:18,  y:78},
-  {id:3,  name:"關卡 3",  label:"P3",  x:24,  y:74},
-  {id:4,  name:"關卡 4",  label:"P4",  x:30,  y:70},
-  {id:5,  name:"關卡 5",  label:"P5",  x:36,  y:66},
-  {id:6,  name:"關卡 6",  label:"P6",  x:42,  y:62},
-  {id:7,  name:"關卡 7",  label:"P7",  x:48,  y:58},
-  {id:8,  name:"關卡 8",  label:"P8",  x:54,  y:54},
-  {id:9,  name:"關卡 9",  label:"P9",  x:60,  y:50},
-  {id:10, name:"關卡 10", label:"P10", x:66,  y:46},
-  {id:11, name:"關卡 11", label:"P11", x:72,  y:42},
-  {id:12, name:"關卡 12", label:"P12", x:78,  y:38},
-  {id:13, name:"關卡 13", label:"P13", x:84,  y:34},
-  {id:14, name:"關卡 14", label:"P14", x:20,  y:58},
-  {id:15, name:"關卡 15", label:"P15", x:26,  y:52},
-  {id:16, name:"關卡 16", label:"P16", x:32,  y:46},
-  {id:17, name:"關卡 17", label:"P17", x:38,  y:40},
-  {id:18, name:"關卡 18", label:"P18", x:44,  y:34},
-  {id:19, name:"關卡 19", label:"P19", x:50,  y:28},
-  {id:20, name:"關卡 20", label:"P20", x:56,  y:22},
-  {id:21, name:"關卡 21", label:"P21", x:62,  y:30},
-  {id:22, name:"關卡 22", label:"P22", x:68,  y:56},
-  {id:23, name:"關卡 23", label:"P23", x:74,  y:60},
-  {id:24, name:"關卡 24", label:"P24", x:80,  y:64},
-  {id:25, name:"關卡 25", label:"P25", x:86,  y:68},
+  {id:1,  name:"正門拱門",        label:"main_gate",        x:15,  y:85},
+  {id:2,  name:"田徑場跑道",      label:"track_field",      x:22,  y:80},
+  {id:3,  name:"籃球場",          label:"basketball_court", x:28,  y:75},
+  {id:4,  name:"排球場",          label:"volleyball_court", x:34,  y:70},
+  {id:5,  name:"體育館入口",      label:"gym_entrance",     x:40,  y:65},
+  {id:6,  name:"圖書館入口",      label:"library_gate",     x:46,  y:60},
+  {id:7,  name:"商管大樓",        label:"business_building",x:52,  y:55},
+  {id:8,  name:"文學大樓",        label:"literature_building",x:58,y:50},
+  {id:9,  name:"理學大樓",        label:"science_building", x:64,  y:45},
+  {id:10, name:"工學大樓",        label:"engineering_building",x:70,y:40},
+  {id:11, name:"大階梯",          label:"grand_stairs",     x:76,  y:35},
+  {id:12, name:"中正堂",          label:"auditorium",       x:82,  y:30},
+  {id:13, name:"學生活動中心",    label:"student_center",   x:88,  y:25},
+  {id:14, name:"中庭雕像花園",    label:"statue_garden",    x:20,  y:60},
+  {id:15, name:"停車場入口",      label:"parking_gate",     x:26,  y:55},
+  {id:16, name:"校門公車站",      label:"bus_stop",         x:32,  y:50},
+  {id:17, name:"學餐",            label:"canteen",          x:38,  y:45},
+  {id:18, name:"便利商店",        label:"convenience_store",x:44,  y:40},
+  {id:19, name:"足球場",          label:"soccer_field",     x:50,  y:35},
+  {id:20, name:"游泳池入口",      label:"swimming_pool",    x:56,  y:30},
+  {id:21, name:"校史館",          label:"history_hall",     x:62,  y:25},
+  {id:22, name:"鐘塔",            label:"clock_tower",      x:68,  y:20},
+  {id:23, name:"操場看台",        label:"stadium_stands",   x:74,  y:25},
+  {id:24, name:"校園石碑",        label:"campus_stone",     x:80,  y:30},
+  {id:25, name:"校旗旗桿",        label:"flag_pole",        x:86,  y:35},
 ];
-// 3) 辨識門檻：若模型輸出目標標籤之信心 >= threshold 即判定通過
-const THRESHOLD = 0.70;
-/* ================================= */
+/* =========================== */
 
-let model, maxPredictions;
-let currentPoint = null;
-const STORAGE_KEY = "tku_orienteering_progress_v1";
-
-// 初始化
+// 畫地圖點位
 document.addEventListener("DOMContentLoaded", () => {
-  renderMapPoints();
-  renderBadges();
-  updateProgressUI();
-  bindUI();
-  if (MODEL_URL) initTM().catch(console.warn);
-});
-
-function bindUI(){
-  document.getElementById("startBtn").addEventListener("click", () => {
-    window.scrollTo({ top: document.getElementById("mapWrap").offsetTop - 16, behavior:"smooth" });
-  });
-  document.getElementById("badgesBtn").addEventListener("click", () => {
-    window.scrollTo({ top: document.getElementById("badgeGrid").offsetTop - 16, behavior:"smooth" });
-  });
-  document.getElementById("resetBtn").addEventListener("click", () => {
-    if(confirm("確定要清除本機闖關進度？")) {
-      localStorage.removeItem(STORAGE_KEY);
-      renderMapPoints();
-      renderBadges();
-      updateProgressUI();
-    }
-  });
-  document.getElementById("howBtn").addEventListener("click", () => toggleHow(true));
-  document.getElementById("imageInput").addEventListener("change", handleFileChange);
-  document.getElementById("checkBtn").addEventListener("click", runCheck);
-}
-
-function toggleHow(show){
-  document.getElementById("howModal").style.display = show ? "flex" : "none";
-}
-function toggleTask(show){
-  const mask = document.getElementById("taskModal");
-  mask.style.display = show ? "flex" : "none";
-  if(!show){
-    document.getElementById("imageInput").value = "";
-    document.getElementById("previewWrap").classList.add("hidden");
-    document.getElementById("resultBox").classList.add("hidden");
-    document.getElementById("checkBtn").disabled = true;
-    currentPoint = null;
-  }
-}
-
-// 地圖點位渲染
-function renderMapPoints(){
   const wrap = document.getElementById("mapWrap");
-  // 先清掉舊點
-  wrap.querySelectorAll(".poi").forEach(n=>n.remove());
-  const doneSet = getProgressSet();
-
   POINTS.forEach(p=>{
-    const dot = document.createElement("button");
-    dot.className = "poi" + (doneSet.has(p.id) ? " done" : "");
+    const dot = document.createElement("div");
+    dot.className = "poi";
     dot.style.left = p.x + "%";
     dot.style.top  = p.y + "%";
-    dot.title = `${p.name}（標籤：${p.label}）`;
+    dot.title = `${p.name} (${p.label})`;
     dot.textContent = p.id;
-    dot.addEventListener("click", ()=>openTask(p));
     wrap.appendChild(dot);
   });
-}
-
-// 徽章牆
-function renderBadges(){
-  const grid = document.getElementById("badgeGrid");
-  grid.innerHTML = "";
-  const doneSet = getProgressSet();
-
-  POINTS.forEach(p=>{
-    const card = document.createElement("div");
-    card.className = "badge " + (doneSet.has(p.id) ? "done" : "");
-    card.innerHTML = `
-      <div class="text-xs text-slate-500">#${p.id}</div>
-      <div class="font-bold mt-1">${p.name}</div>
-      <div class="text-xs text-slate-500">標籤：<code>${p.label}</code></div>
-      <div class="mt-2">
-        ${doneSet.has(p.id)
-          ? '<span class="inline-flex items-center gap-1 text-green-600 text-sm">✅ 已獲得</span>'
-          : '<span class="inline-flex items-center gap-1 text-slate-400 text-sm">🔒 未解鎖</span>'}
-      </div>`;
-    grid.appendChild(card);
-  });
-}
-
-// 進度
-function getProgressSet(){
-  try{
-    const arr = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-    return new Set(arr);
-  }catch(e){ return new Set(); }
-}
-function setProgressSet(set){
-  const arr = Array.from(set);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-}
-function addProgress(id){
-  const s = getProgressSet();
-  s.add(id);
-  setProgressSet(s);
-  renderMapPoints();
-  renderBadges();
-  updateProgressUI();
-}
-function updateProgressUI(){
-  const count = getProgressSet().size;
-  const percent = Math.round((count / POINTS.length) * 100);
-  document.getElementById("progressBar").style.width = percent + "%";
-  document.getElementById("progressText").textContent = `已完成 ${count} / ${POINTS.length}`;
-}
-
-// 開啟任務
-function openTask(p){
-  currentPoint = p;
-  document.getElementById("taskTitle").textContent = `${p.name}`;
-  document.getElementById("taskSubtitle").innerHTML = `請上傳「<b>${p.label}</b>」對應的標的物照片（AI 需辨識到此標籤才算通過）`;
-  toggleTask(true);
-}
-
-// 預覽 & 啟用辨識
-function handleFileChange(e){
-  const file = e.target.files[0];
-  if(!file){ return; }
-  const url = URL.createObjectURL(file);
-  document.getElementById("previewImg").src = url;
-  document.getElementById("previewWrap").classList.remove("hidden");
-  document.getElementById("resultBox").classList.add("hidden");
-  document.getElementById("checkBtn").disabled = false;
-}
-
-// 初始化 Teachable Machine（若未設定 MODEL_URL，則以「示範模式」運作）
-async function initTM(){
-  try{
-    const modelURL = MODEL_URL.endsWith("/") ? MODEL_URL + "model.json" : MODEL_URL + "/model.json";
-    const metadataURL = MODEL_URL.endsWith("/") ? MODEL_URL + "metadata.json" : MODEL_URL + "/metadata.json";
-    model = await tmImage.load(modelURL, metadataURL);
-    maxPredictions = model.getTotalClasses();
-    console.log("TM 模型載入完成，classes:", maxPredictions);
-  }catch(err){
-    console.warn("模型載入失敗，將使用示範模式：", err);
-    model = null;
-  }
-}
-
-// 執行辨識
-async function runCheck(){
-  const info = document.getElementById("resultText");
-  const box  = document.getElementById("resultBox");
-  box.classList.remove("hidden");
-  info.textContent = "辨識中，請稍候…";
-
-  const imgEl = document.getElementById("previewImg");
-  let pass = false, best = {className:"", probability:0};
-
-  if(model){
-    // 以 TM Image 進行分類
-    const preds = await model.predict(imgEl, false);
-    preds.sort((a,b)=>b.probability - a.probability);
-    best = preds[0];
-    const target = (currentPoint?.label || "").trim();
-    const hit = preds.find(p => p.className === target);
-    const score = hit ? hit.probability : 0;
-    pass = score >= THRESHOLD;
-  }else{
-    // 示範模式：若檔名包含 label 字樣就當作通過（方便沒模型時先 demo）
-    const fileName = (document.getElementById("imageInput").files[0]?.name || "").toLowerCase();
-    const token = (currentPoint?.label || "").toLowerCase();
-    pass = token && fileName.includes(token);
-    best = {className: pass ? currentPoint?.label : "Unknown", probability: pass ? 0.9 : 0.2};
-  }
-
-  if(pass){
-    info.innerHTML = `✅ <b>闖關成功！</b> 偵測到標籤 <code>${currentPoint.label}</code>（最高：${best.className}，信心 ${best.probability.toFixed(2)}）`;
-    addProgress(currentPoint.id);
-  }else{
-    info.innerHTML = `❌ <b>尚未通過</b>：未偵測到 <code>${currentPoint.label}</code>（最高：${best.className}，信心 ${best.probability.toFixed(2)}）<br>
-    建議：換角度再拍、讓標的物更清楚，或在光線充足處重拍。`;
-  }
-}
-
-/* 規則視窗預設開一次 */
-setTimeout(()=>toggleHow(true), 400);
+});
 </script>
 </body>
 </html>
