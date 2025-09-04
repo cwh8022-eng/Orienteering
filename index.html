@@ -3,9 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>淡江大學定向運動闖關挑戰（方案B：無模型先測上傳）</title>
+<title>淡江大學定向運動闖關挑戰（先測上傳版）</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
 <style>
   :root { --accent:#f97316; --ok:#22c55e; }
   .pill{
@@ -32,7 +31,6 @@
   </div>
 </header>
 
-<!-- 進度列 -->
 <section class="max-w-6xl mx-auto px-4">
   <div class="grid md:grid-cols-3 gap-4 items-stretch">
     <div class="col-span-2 bg-white rounded-2xl p-4 border border-slate-200">
@@ -44,7 +42,7 @@
         <div id="progressBar" class="bg-[var(--accent)] h-3 rounded-xl" style="width:0%"></div>
       </div>
       <p id="progressText" class="text-sm mt-2 text-slate-600">已完成 0 / 25</p>
-      <p id="sidText" class="text-xs mt-1 text-slate-500">學號：<span id="sidVal">（未設定）</span></p>
+      <p class="text-xs mt-1 text-slate-500">學號：<span id="sidVal">（未設定）</span></p>
     </div>
     <div class="bg-white rounded-2xl p-4 border border-slate-200">
       <h2 class="font-bold mb-2">快速動作</h2>
@@ -57,7 +55,6 @@
   </div>
 </section>
 
-<!-- 地圖（參考） -->
 <section class="max-w-6xl mx-auto px-4 mt-6">
   <div class="bg-white rounded-2xl p-3 border border-slate-200">
     <h2 class="font-bold mb-3">校園地圖（參考）</h2>
@@ -67,7 +64,6 @@
   </div>
 </section>
 
-<!-- 目標拼圖（參考） -->
 <section class="max-w-6xl mx-auto px-4 mt-6">
   <div class="bg-white rounded-2xl p-3 border border-slate-200">
     <h2 class="font-bold mb-3">拍照目標一覽（#1–#25）</h2>
@@ -78,15 +74,13 @@
   </div>
 </section>
 
-<!-- 關卡列表：5×5 -->
 <section class="max-w-6xl mx-auto px-4 mt-6">
   <div class="bg-white rounded-2xl p-4 border border-slate-200">
-    <h2 class="font-bold mb-3">關卡列表（點擊編號上傳與送交 Drive）</h2>
+    <h2 class="font-bold mb-3">關卡列表（點擊編號上傳）</h2>
     <div id="poiList" class="grid grid-cols-5 gap-3"></div>
   </div>
 </section>
 
-<!-- 徽章牆 -->
 <section class="max-w-6xl mx-auto px-4 mt-6 mb-20">
   <div class="bg-white rounded-2xl p-4 border border-slate-200">
     <div class="flex items-center gap-3 mb-3">
@@ -107,14 +101,14 @@
     <ol class="list-decimal ps-5 space-y-1 text-slate-700">
       <li>在關卡列表點選編號（#1~#25）。</li>
       <li>自拍並拍下該編號的標的物。</li>
-      <li>按下「AI 辨識並上傳」後，會直接上傳到 Google Drive（暫不做 AI 驗證）。</li>
+      <li>按「上傳到 Google Drive」後，會直接送到雲端（暫不做 AI 驗證）。</li>
       <li>進度儲存在本機；集滿 25 枚徽章完成挑戰。</li>
     </ol>
     <div class="mt-4 text-right"><button class="px-3 py-2 rounded-xl bg-[var(--accent)] text-white" onclick="toggleHow(false)">我知道了</button></div>
   </div>
 </div>
 
-<!-- 上傳 / 辨識 Modal -->
+<!-- 上傳 Modal -->
 <div id="taskModal" class="modal-mask">
   <div class="modal-card">
     <div class="flex items-start justify-between gap-3">
@@ -144,15 +138,11 @@
 </div>
 
 <script>
-/* ======= 固定設定（已替你填好） ======= */
+/* ======= 你的 Web App URL（已填好） ======= */
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyHjLdgXAkfoG5XUkMwOlJsJZ874eSgf-rOkzJtsugrYjsB0uxGa8oybeX1e2o7Vzcxcw/exec';
-/* ===================================== */
+/* ========================================= */
 
-const MODEL_URL   = '';      // 先留空：不上 AI 模型
-const THRESHOLD   = 0.70;    // 之後接模型才會用到
-const POINTS = Array.from({length:25}, (_,i)=>({ id:i+1, label:`P${i+1}` })); // 只顯示編號；label 僅供未來模型用
-
-let model = null;           // 未接模型 → 仍保留結構
+const POINTS = Array.from({length:25}, (_,i)=>({ id:i+1, label:`P${i+1}` })); // 只顯示編號；label 預留
 let currentPoint = null;
 const STORAGE_KEY = "tku_orienteering_progress_v1";
 const SID_KEY = "tku_orienteering_sid";
@@ -164,7 +154,6 @@ document.addEventListener("DOMContentLoaded", () => {
   updateProgressUI();
   bindUI();
   loadSID();
-  // MODEL_URL 留空 → 不載入 TM；純上傳測試
   setTimeout(()=>toggleHow(true), 400);
 });
 
@@ -276,7 +265,7 @@ function handleFileChange(e){
   document.getElementById("checkBtn").disabled = false;
 }
 
-/* 方案B：不上 AI，直接上傳 Drive */
+/* 先測上傳：不上 AI，直接送 Drive */
 async function runUploadOnly(){
   const info = document.getElementById("resultText");
   const box  = document.getElementById("resultBox");
@@ -289,31 +278,46 @@ async function runUploadOnly(){
   const file = fileEl.files[0];
   if(!file){ info.textContent = "請先選擇照片"; return; }
 
+  if (file.size > 20 * 1024 * 1024) {
+    info.textContent = "檔案過大（>20MB），請壓縮後再上傳。";
+    return;
+  }
+
   info.textContent = "正在上傳到 Google Drive…";
 
   try{
     const fd = new FormData();
     fd.append('sid', sid);
     fd.append('pointId', currentPoint.id);
-    fd.append('label', currentPoint.label); // 保留欄位，日後接模型會用到
+    fd.append('label', currentPoint.label);
     fd.append('file', file, file.name);
 
-    const res = await fetch(WEB_APP_URL, { method:'POST', body: fd });
-    const json = await res.json();
-    if(!json.ok) throw new Error(json.error || 'Upload failed');
+    const res = await fetch(WEB_APP_URL, { method:'POST', body: fd, redirect: 'follow' });
 
-    info.innerHTML = `✅ 上傳完成！教師可於 Drive 檢核。<br><a class="text-blue-600 underline" target="_blank" href="${json.url}">在雲端開啟</a>`;
-    addProgress(currentPoint.id);
+    let json = null, text = '';
+    try { json = await res.clone().json(); } catch (_){ try { text = await res.text(); } catch(__){} }
+
+    if (!res.ok) {
+      info.innerHTML = `❌ 伺服器狀態 ${res.status}。<br><pre class="text-xs whitespace-pre-wrap">${text || '(無文字內容)'}</pre>`;
+      return;
+    }
+
+    if (json && json.ok) {
+      info.innerHTML = `✅ 上傳完成！教師可於 Drive 檢核。<br><a class="text-blue-600 underline" target="_blank" href="${json.url}">在雲端開啟</a>`;
+      addProgress(currentPoint.id);
+    } else {
+      if (text && text.startsWith('{') && text.includes('"ok":true')) {
+        info.innerHTML = `✅ 上傳完成！（解析例外，但伺服器回傳成功）`;
+        addProgress(currentPoint.id);
+      } else {
+        info.innerHTML = `⚠️ 上傳失敗。<br><pre class="text-xs whitespace-pre-wrap">${text || JSON.stringify(json) || '（無明確錯誤）'}</pre>`;
+      }
+    }
   }catch(err){
     console.error(err);
-    info.innerHTML = "⚠️ 上傳雲端失敗，請稍後重試或聯絡老師。";
+    info.innerHTML = `⚠️ 網路/跨網域例外：${String(err)}`;
   }
 }
-
-/* 工具：共用顯示/關閉上傳視窗 */
-function toggleTask(show){ const m=document.getElementById("taskModal"); m.style.display=show?"flex":"none";
-  if(!show){ document.getElementById("imageInput").value=""; document.getElementById("previewWrap").classList.add("hidden");
-    document.getElementById("resultBox").classList.add("hidden"); document.getElementById("checkBtn").disabled=true; currentPoint=null; } }
 </script>
 </body>
 </html>
