@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>淡江大學定向運動闖關挑戰（先測上傳版｜JSON 模式）</title>
+<title>淡江大學定向運動闖關挑戰（先測上傳版｜FormData 版）</title>
 
-<!-- 使用你本機的樣式檔（無需 CDN） -->
+<!-- 你的本機樣式（無需 CDN） -->
 <link rel="stylesheet" href="./styles.css" />
 
 <style>
@@ -19,7 +19,7 @@
   .badge.done{ border-style:solid; background:#f0fdf4; }
   .modal-mask{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:50; }
   .modal-card{ width:min(560px,92vw); background:#fff; border-radius:1rem; padding:1rem; box-shadow:0 20px 60px rgba(0,0,0,.25) }
-  /* 預覽與彈窗滾動修正（避免按鈕被擠掉） */
+  /* 預覽與彈窗滾動修正 */
   #taskModal .modal-card{ max-height:90vh; overflow-y:auto; -webkit-overflow-scrolling:touch; }
   #previewImg{ width:100%; height:auto; max-height:16rem; object-fit:contain; }
 </style>
@@ -29,7 +29,7 @@
   <div class="w-12 h-12 rounded-2xl bg-[var(--accent)] text-white grid place-items-center font-extrabold">TKU</div>
   <div>
     <h1 class="text-2xl md:text-3xl font-extrabold">淡江大學定向運動闖關挑戰</h1>
-    <p class="text-slate-600">先測「自拍→上傳到 Google Drive」流程（JSON 上傳）；之後再接上 AI 模型。</p>
+    <p class="text-slate-600">先測「自拍→上傳到 Google Drive」流程（FormData 版），避免 CORS。</p>
   </div>
   <div class="ms-auto flex gap-2">
     <button id="howBtn" class="px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50">規則說明</button>
@@ -179,7 +179,7 @@ function bindUI(){
   document.getElementById("howBtn").addEventListener("click", () => toggleHow(true));
   document.getElementById("idBtn").addEventListener("click", promptSID);
   document.getElementById("imageInput").addEventListener("change", handleFileChange);
-  document.getElementById("checkBtn").addEventListener("click", runUploadOnly_JSON);
+  document.getElementById("checkBtn").addEventListener("click", runUploadOnly_FormData);
 }
 
 function loadSID(){
@@ -271,8 +271,8 @@ function handleFileChange(e){
   document.getElementById("checkBtn").disabled = false;
 }
 
-/* === 只送 JSON 版本（避免 e.files 解析問題） === */
-async function runUploadOnly_JSON(){
+/* === FormData 版（不觸發 CORS preflight） === */
+async function runUploadOnly_FormData(){
   const info = document.getElementById("resultText");
   const box  = document.getElementById("resultBox");
   box.classList.remove("hidden");
@@ -289,10 +289,10 @@ async function runUploadOnly_JSON(){
     return;
   }
 
-  info.textContent = "正在上傳到 Google Drive（JSON）…";
+  info.textContent = "正在上傳到 Google Drive（FormData）…";
 
   try{
-    // 讀為 dataURL（含 MIME）；例如 data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ...
+    // 後備：把同一張圖轉成 dataURL（Base64），以便 GAS 端若抓不到 e.files.file 時仍可解析
     const dataURL = await new Promise((resolve, reject)=>{
       const fr = new FileReader();
       fr.onload = () => resolve(fr.result);
@@ -300,32 +300,33 @@ async function runUploadOnly_JSON(){
       fr.readAsDataURL(file);
     });
 
-    const payload = {
-      sid,
-      pointId: currentPoint.id,
-      label: currentPoint.label,
-      fileBase64: dataURL,            // 後端從 e.postData.contents 解析
-      fileType: file.type || "image/jpeg"
-    };
+    const fd = new FormData();
+    fd.append('sid', sid);
+    fd.append('pointId', currentPoint.id);
+    fd.append('label', currentPoint.label);
+    fd.append('file', file, file.name);          // 主軌：multipart binary
+    fd.append('fileBase64', dataURL);            // 後備：base64
+    fd.append('fileType', file.type || 'image/jpeg');
 
-    const res  = await fetch(WEB_APP_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
+    // 重要：不要加任何自訂 headers，避免 preflight
+    const res = await fetch(WEB_APP_URL, { method:'POST', body: fd });
 
-    const text = await res.text();
+    let json=null, text='';
+    try{ json = await res.clone().json(); }catch(_){ try{ text = await res.text(); }catch(__){} }
+
     if (!res.ok) {
       info.innerHTML = `❌ 伺服器狀態 ${res.status}。<br><pre class="text-xs whitespace-pre-wrap">${text || '(無文字內容)'}</pre>`;
       return;
     }
 
-    let json = null; try{ json = JSON.parse(text); }catch(_){}
     if (json && json.ok) {
       info.innerHTML = `✅ 上傳完成！教師可於 Drive 檢核。<br><a class="text-blue-600 underline" target="_blank" href="${json.url}">在雲端開啟</a>`;
       addProgress(currentPoint.id);
+    } else if (text && text.startsWith('{') && text.includes('"ok":true')) {
+      info.innerHTML = `✅ 上傳完成！（解析例外，但伺服器回傳成功）`;
+      addProgress(currentPoint.id);
     } else {
-      info.innerHTML = `⚠️ 上傳結果無法解析或失敗。<br><pre class="text-xs whitespace-pre-wrap">${text}</pre>`;
+      info.innerHTML = `⚠️ 上傳失敗。<br><pre class="text-xs whitespace-pre-wrap">${text || JSON.stringify(json) || '（無明確錯誤）'}</pre>`;
     }
 
   }catch(err){
