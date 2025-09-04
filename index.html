@@ -130,4 +130,209 @@
         <p class="text-xs text-slate-500 mt-1">手機會直接開啟相機；請確保本人入鏡。</p>
       </div>
       <div id="previewWrap" class="mt-3 hidden">
-        <img id="previewImg" class="rounded-xl border border-slate-200" alt="預覽"
+        <img id="previewImg" class="rounded-xl border border-slate-200" alt="預覽"/>
+      </div>
+      <div class="mt-3 flex flex-wrap gap-2">
+        <button id="checkBtn" class="px-3 py-2 rounded-xl bg-[var(--accent)] text-white disabled:opacity-50" disabled>上傳到 Google Drive</button>
+        <button class="px-3 py-2 rounded-xl bg-white border border-slate-200" onclick="toggleTask(false)">稍後再試</button>
+      </div>
+      <div id="resultBox" class="mt-3 hidden">
+        <div id="resultText" class="text-sm"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ======= 你的 Web App URL（請確認） ======= */
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyHjLdgXAkfoG5XUkMwOlJsJZ874eSgf-rOkzJtsugrYjsB0uxGa8oybeX1e2o7Vzcxcw/exec';
+/* ========================================= */
+
+const POINTS = Array.from({length:25}, (_,i)=>({ id:i+1, label:`P${i+1}` })); // 只顯示編號；label 預留
+let currentPoint = null;
+const STORAGE_KEY = "tku_orienteering_progress_v1";
+const SID_KEY = "tku_orienteering_sid";
+
+/* 初始化 */
+document.addEventListener("DOMContentLoaded", () => {
+  renderPOIList();
+  renderBadges();
+  updateProgressUI();
+  bindUI();
+  loadSID();
+  setTimeout(()=>toggleHow(true), 400);
+});
+
+function bindUI(){
+  document.getElementById("startBtn").addEventListener("click", () => {
+    window.scrollTo({ top: document.getElementById("poiList").offsetTop - 16, behavior:"smooth" });
+  });
+  document.getElementById("badgesBtn").addEventListener("click", () => {
+    window.scrollTo({ top: document.getElementById("badgeGrid").offsetTop - 16, behavior:"smooth" });
+  });
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    if(confirm("確定要清除本機進度？")) {
+      localStorage.removeItem(STORAGE_KEY);
+      renderPOIList(); renderBadges(); updateProgressUI();
+    }
+  });
+  document.getElementById("howBtn").addEventListener("click", () => toggleHow(true));
+  document.getElementById("idBtn").addEventListener("click", promptSID);
+  document.getElementById("imageInput").addEventListener("change", handleFileChange);
+  document.getElementById("checkBtn").addEventListener("click", runUploadOnly_JSON);
+}
+
+function loadSID(){
+  const sid = localStorage.getItem(SID_KEY) || "";
+  document.getElementById("sidVal").textContent = sid || "（未設定）";
+  if(!sid) setTimeout(promptSID, 500);
+}
+function promptSID(){
+  const old = localStorage.getItem(SID_KEY) || "";
+  const v = prompt("請輸入你的學號（或識別 ID）：", old);
+  if (v !== null) {
+    localStorage.setItem(SID_KEY, v.trim());
+    document.getElementById("sidVal").textContent = v.trim() || "（未設定）";
+  }
+}
+
+function toggleHow(show){ document.getElementById("howModal").style.display = show ? "flex" : "none"; }
+function toggleTask(show){
+  const mask = document.getElementById("taskModal");
+  mask.style.display = show ? "flex" : "none";
+  if(!show){
+    document.getElementById("imageInput").value = "";
+    document.getElementById("previewWrap").classList.add("hidden");
+    document.getElementById("resultBox").classList.add("hidden");
+    document.getElementById("checkBtn").disabled = true;
+    currentPoint = null;
+  }
+}
+
+/* 5×5 關卡 */
+function renderPOIList(){
+  const box = document.getElementById("poiList");
+  box.innerHTML = "";
+  const doneSet = getProgressSet();
+  POINTS.forEach(p=>{
+    const btn = document.createElement("button");
+    btn.className = "pill" + (doneSet.has(p.id) ? " done" : "");
+    btn.textContent = `#${p.id}`;
+    btn.addEventListener("click", ()=>openTask(p));
+    box.appendChild(btn);
+  });
+}
+
+/* 徽章牆 */
+function renderBadges(){
+  const grid = document.getElementById("badgeGrid");
+  grid.innerHTML = "";
+  const doneSet = getProgressSet();
+  POINTS.forEach(p=>{
+    const card = document.createElement("div");
+    card.className = "badge " + (doneSet.has(p.id) ? "done" : "");
+    card.innerHTML = `
+      <div class="font-bold">#${p.id}</div>
+      <div class="mt-2">
+        ${doneSet.has(p.id)?'<span class="text-green-600 text-sm">✅ 已獲得</span>':'<span class="text-slate-400 text-sm">🔒 未解鎖</span>'}
+      </div>`;
+    grid.appendChild(card);
+  });
+}
+
+/* 進度 */
+function getProgressSet(){ try{ return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]")); } catch{ return new Set(); } }
+function setProgressSet(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(s))); }
+function addProgress(id){
+  const s = getProgressSet(); s.add(id); setProgressSet(s);
+  renderPOIList(); renderBadges(); updateProgressUI();
+}
+function updateProgressUI(){
+  const count = getProgressSet().size;
+  const percent = Math.round((count / POINTS.length) * 100);
+  document.getElementById("progressBar").style.width = percent + "%";
+  document.getElementById("progressText").textContent = `已完成 ${count} / ${POINTS.length}`;
+}
+
+/* 任務流程 */
+function openTask(p){
+  currentPoint = p;
+  document.getElementById("taskTitle").textContent = `#${p.id}`;
+  document.getElementById("taskSubtitle").textContent = `請自拍並拍下此編號的標的物（目前不驗證 AI）`;
+  toggleTask(true);
+}
+function handleFileChange(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const url = URL.createObjectURL(file);
+  document.getElementById("previewImg").src = url;
+  document.getElementById("previewWrap").classList.remove("hidden");
+  document.getElementById("resultBox").classList.add("hidden");
+  document.getElementById("checkBtn").disabled = false;
+}
+
+/* === 只送 JSON 版本（避免 e.files 解析問題） === */
+async function runUploadOnly_JSON(){
+  const info = document.getElementById("resultText");
+  const box  = document.getElementById("resultBox");
+  box.classList.remove("hidden");
+
+  const sid = localStorage.getItem(SID_KEY) || "";
+  if(!sid){ alert("請先設定學號"); return promptSID(); }
+
+  const fileEl = document.getElementById("imageInput");
+  const file = fileEl.files[0];
+  if(!file){ info.textContent = "請先選擇照片"; return; }
+
+  if (file.size > 20 * 1024 * 1024) {
+    info.textContent = "檔案過大（>20MB），請壓縮後再上傳。";
+    return;
+  }
+
+  info.textContent = "正在上傳到 Google Drive（JSON）…";
+
+  try{
+    // 讀為 dataURL（含 MIME）；例如 data:image/jpeg;base64,/9j/4AAQSkZJRgABAQ...
+    const dataURL = await new Promise((resolve, reject)=>{
+      const fr = new FileReader();
+      fr.onload = () => resolve(fr.result);
+      fr.onerror = reject;
+      fr.readAsDataURL(file);
+    });
+
+    const payload = {
+      sid,
+      pointId: currentPoint.id,
+      label: currentPoint.label,
+      fileBase64: dataURL,            // 後端從 e.postData.contents 解析
+      fileType: file.type || "image/jpeg"
+    };
+
+    const res  = await fetch(WEB_APP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    const text = await res.text();
+    if (!res.ok) {
+      info.innerHTML = `❌ 伺服器狀態 ${res.status}。<br><pre class="text-xs whitespace-pre-wrap">${text || '(無文字內容)'}</pre>`;
+      return;
+    }
+
+    let json = null; try{ json = JSON.parse(text); }catch(_){}
+    if (json && json.ok) {
+      info.innerHTML = `✅ 上傳完成！教師可於 Drive 檢核。<br><a class="text-blue-600 underline" target="_blank" href="${json.url}">在雲端開啟</a>`;
+      addProgress(currentPoint.id);
+    } else {
+      info.innerHTML = `⚠️ 上傳結果無法解析或失敗。<br><pre class="text-xs whitespace-pre-wrap">${text}</pre>`;
+    }
+
+  }catch(err){
+    console.error(err);
+    info.innerHTML = `⚠️ 網路/跨網域例外：${String(err)}`;
+  }
+}
+</script>
+</body>
+</html>
