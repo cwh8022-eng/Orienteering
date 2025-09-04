@@ -1,0 +1,24 @@
+<!doctype html><meta charset="utf-8">
+<h3>GAS 上傳測試</h3>
+<p>選一張小圖 → 按「上傳測試」；看右側回應。</p>
+<input type="file" id="f"><button id="u">上傳測試</button>
+<pre id="o" style="white-space:pre-wrap;border:1px solid #ddd;padding:.5rem;border-radius:.5rem;"></pre>
+<script>
+const URL = 'https://script.google.com/macros/s/AKfycbyHjLdgXAkfoG5XUkMwOlJsJZ874eSgf-rOkzJtsugrYjsB0uxGa8oybeX1e2o7Vzcxcw/exec';
+u.onclick = async () => {
+  const f = document.getElementById('f').files[0];
+  if(!f){ o.textContent = '請選擇檔案'; return; }
+  // 同送 multipart + base64
+  const dataUrl = await new Promise((res, rej)=>{ const fr=new FileReader(); fr.onload=()=>res(fr.result); fr.onerror=rej; fr.readAsDataURL(f); });
+  const fd = new FormData();
+  fd.append('sid','TEST');
+  fd.append('pointId','99');
+  fd.append('label','P99');
+  fd.append('file',f,f.name);
+  fd.append('fileBase64', dataUrl);
+  fd.append('fileType', f.type || 'image/jpeg');
+  const res = await fetch(URL,{method:'POST', body:fd});
+  const t = await res.text();
+  o.textContent = 'HTTP '+res.status+'\n'+t;
+};
+</script>

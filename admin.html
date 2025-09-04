@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>教師後台｜淡江闖關上傳檢視</title>
+<link rel="stylesheet" href="./styles.css" />
+<style>
+  .card{border:1px solid #e5e7eb;border-radius:0.75rem;overflow:hidden;background:#fff}
+  .thumb{width:100%;aspect-ratio:1/1;object-fit:cover;display:block}
+  .toolbar{background:#fff;border:1px solid #e5e7eb;border-radius:1rem;padding:1rem}
+  .btn{border:1px solid #e5e7eb;border-radius:.6rem;padding:.5rem .75rem;background:#fff}
+  .btn-primary{background:#f97316;color:#fff;border-color:#f97316}
+</style>
+</head>
+<body class="bg-orange-50/40 text-slate-800">
+<header class="max-w-6xl mx-auto px-4 py-6">
+  <h1 class="text-2xl font-extrabold">教師後台｜上傳檢視與審核</h1>
+  <p class="text-slate-600">依學號與關卡編號查詢；可快速開啟雲端檔案並（可選）記錄審核結果。</p>
+</header>
+
+<main class="max-w-6xl mx-auto px-4 pb-20">
+  <section class="toolbar">
+    <div class="grid md:grid-cols-4 gap-3 items-stretch">
+      <div>
+        <label class="text-sm text-slate-500">Web App URL</label>
+        <input id="api" class="w-full border rounded-lg px-3 py-2" value="https://script.google.com/macros/s/AKfycbyHjLdgXAkfoG5XUkMwOlJsJZ874eSgf-rOkzJtsugrYjsB0uxGa8oybeX1e2o7Vzcxcw/exec">
+      </div>
+      <div>
+        <label class="text-sm text-slate-500">Admin Token</label>
+        <input id="token" class="w-full border rounded-lg px-3 py-2" placeholder="請輸入 ADMIN_TOKEN">
+      </div>
+      <div>
+        <label class="text-sm text-slate-500">學號（可空）</label>
+        <input id="sid" class="w-full border rounded-lg px-3 py-2" placeholder="例如 S1234567">
+      </div>
+      <div>
+        <label class="text-sm text-slate-500">關卡（1-25，可空）</label>
+        <input id="point" type="number" min="1" max="25" class="w-full border rounded-lg px-3 py-2" placeholder="例如 3">
+      </div>
+    </div>
+    <div class="mt-3 flex gap-2 items-center">
+      <button id="loadBtn" class="btn btn-primary">載入清單</button>
+      <button id="savePrefBtn" class="btn">儲存偏好</button>
+      <span id="stat" class="text-sm text-slate-500 ms-auto"></span>
+    </div>
+  </section>
+
+  <section class="mt-6">
+    <div id="grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+    <div id="pager" class="flex items-center gap-3 mt-4">
+      <button id="prevBtn" class="btn">上一頁</button>
+      <button id="nextBtn" class="btn">下一頁</button>
+      <span id="pageInfo" class="text-sm text-slate-500"></span>
+    </div>
+  </section>
+</main>
+
+<script>
+const LS = { api:'tku_admin_api', token:'tku_admin_token', sid:'tku_admin_sid', point:'tku_admin_point' };
+const apiEl = document.getElementById('api');
+const tokenEl = document.getElementById('token');
+const sidEl = document.getElementById('sid');
+const pointEl = document.getElementById('point');
+const statEl = document.getElementById('stat');
+const gridEl = document.getElementById('grid');
+const prevBtn = document.getElementById('prevBtn');
+const nextBtn = document.getElementById('nextBtn');
+const pageInfo = document.getElementById('pageInfo');
+
+let offset = 0, limit = 50, total = 0;
+
+document.getElementById('loadBtn').addEventListener('click', ()=>{ offset=0; load(); });
+document.getElementById('savePrefBtn').addEventListener('click', savePref);
+prevBtn.addEventListener('click', ()=>{ offset = Math.max(0, offset - limit); load(); });
+nextBtn.addEventListener('click', ()=>{ if(offset + limit < total){ offset += limit; load(); } });
+
+initFromLS();
+
+async function load(){
+  const api = apiEl.value.trim();
+  const token = tokenEl.value.trim();
+  const sid = sidEl.value.trim();
+  const point = (pointEl.value||'').trim();
+  if(!api || !token){ alert('請先填 Web App URL 與 Admin Token'); return; }
+
+  statEl.textContent = '載入中…';
+  gridEl.innerHTML = '';
+  pageInfo.textContent = '';
+
+  const url = new URL(api);
+  url.searchParams.set('action','list');
+  url.searchParams.set('token',token);
+  if(sid) url.searchParams.set('sid',sid);
+  if(point) url.searchParams.set('pointId', point);
+  url.searchParams.set('limit', String(limit));
+  url.searchParams.set('offset', String(offset));
+
+  try{
+    const res = await fetch(url.toString(), { method:'GET' });
+    const json = await res.json();
+    if(!json.ok){ statEl.textContent = '錯誤：' + (json.error || 'unknown'); return; }
+    total = json.total || 0;
+    const rows = json.rows || [];
+    statEl.textContent = `共 ${total} 筆，顯示 ${rows.length} 筆`;
+    pageInfo.textContent = `第 ${Math.floor(offset/limit)+1} / ${Math.max(1, Math.ceil(total/limit))} 頁`;
+
+    rows.forEach(r=>{
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <img class="thumb" src="${r.viewUrl}" alt="${r.name}">
+        <div class="p-3 text-sm">
+          <div class="font-mono text-xs break-all">${r.name}</div>
+          <div class="text-slate-500 mt-1">${new Date(r.createdTime).toLocaleString()}</div>
+          <div class="mt-2 flex gap-2">
+            <a class="btn" href="${r.url}" target="_blank">在雲端開啟</a>
+            <button class="btn" data-action="approve" data-file="${r.id}">通過</button>
+            <button class="btn" data-action="reject" data-file="${r.id}">退回</button>
+          </div>
+        </div>`;
+      gridEl.appendChild(card);
+    });
+    gridEl.querySelectorAll('button[data-action]').forEach(btn=>{
+      btn.addEventListener('click', ()=>submitReview(btn.dataset.action, btn.dataset.file));
+    });
+  }catch(err){
+    statEl.textContent = '例外：' + String(err);
+  }
+}
+
+async function submitReview(action, fileId){
+  const api = apiEl.value.trim();
+  const token = tokenEl.value.trim();
+  const sid = sidEl.value.trim();
+  const point = (pointEl.value||'').trim();
+  if(!api || !token){ alert('請先填 Web App URL 與 Admin Token'); return; }
+
+  const note = prompt('輸入備註（可空）：', '');
+  const fd = new FormData();
+  fd.append('action','review');
+  fd.append('token', token);
+  fd.append('sid', sid);
+  fd.append('pointId', point || '');
+  fd.append('fileId', fileId);
+  fd.append('status', action === 'approve' ? 'approved' : 'rejected');
+  fd.append('note', note || '');
+  try{
+    const res = await fetch(api, { method:'POST', body: fd });
+    const json = await res.json();
+    if(json && json.ok){ alert('已送出審核紀錄' + (note ? `（備註：${note}）` : '')); }
+    else{ alert('審核失敗：' + (json && json.error || 'unknown')); }
+  }catch(err){ alert('例外：' + String(err)); }
+}
+
+function savePref(){
+  localStorage.setItem(LS.api, apiEl.value.trim());
+  localStorage.setItem(LS.token, tokenEl.value.trim());
+  localStorage.setItem(LS.sid, sidEl.value.trim());
+  localStorage.setItem(LS.point, pointEl.value.trim());
+  alert('已儲存偏好');
+}
+function initFromLS(){
+  apiEl.value   = localStorage.getItem(LS.api)   || apiEl.value;
+  tokenEl.value = localStorage.getItem(LS.token) || '';
+  sidEl.value   = localStorage.getItem(LS.sid)   || '';
+  pointEl.value = localStorage.getItem(LS.point) || '';
+}
+</script>
+</body>
+</html>
