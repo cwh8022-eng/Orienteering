@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>淡江大學定向運動闖關挑戰（先測上傳版）</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="./styles.css" />
 <style>
   :root { --accent:#f97316; --ok:#22c55e; }
   .pill{
@@ -286,7 +286,6 @@ async function runUploadOnly(){
   info.textContent = "正在上傳到 Google Drive…";
 
   try{
-    // 讀為 dataURL（Base64 後備）
     const fileBase64 = await new Promise((resolve, reject)=>{
       const fr = new FileReader();
       fr.onload = () => resolve(fr.result); // dataURL
@@ -298,8 +297,8 @@ async function runUploadOnly(){
     fd.append('sid', sid);
     fd.append('pointId', currentPoint.id);
     fd.append('label', currentPoint.label);
-    fd.append('file', file, file.name);           // multipart 主軌
-    fd.append('fileBase64', fileBase64);          // 後備：Base64
+    fd.append('file', file, file.name);
+    fd.append('fileBase64', fileBase64);
     fd.append('fileType', file.type || 'image/jpeg');
 
     const res = await fetch(WEB_APP_URL, { method:'POST', body: fd, redirect: 'follow' });
@@ -316,7 +315,6 @@ async function runUploadOnly(){
       info.innerHTML = `✅ 上傳完成！教師可於 Drive 檢核。<br><a class="text-blue-600 underline" target="_blank" href="${json.url}">在雲端開啟</a>`;
       addProgress(currentPoint.id);
     } else if (text && text.startsWith('{') && text.includes('"ok":true')) {
-      // 有些情況（解析/CORS）JSON 失敗但其實成功
       info.innerHTML = `✅ 上傳完成！（解析例外，但伺服器回傳成功）`;
       addProgress(currentPoint.id);
     } else {
