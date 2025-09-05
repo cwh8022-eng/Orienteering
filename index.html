@@ -3,11 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>淡江大學定向運動闖關挑戰（先測上傳版｜FormData 版）</title>
-
-<!-- 你的本機樣式（無需 CDN） -->
+<title>淡江大學定向運動闖關挑戰（上傳整合版）</title>
 <link rel="stylesheet" href="./styles.css" />
-
 <style>
   :root { --accent:#f97316; --ok:#22c55e; }
   .pill{
@@ -19,9 +16,6 @@
   .badge.done{ border-style:solid; background:#f0fdf4; }
   .modal-mask{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:50; }
   .modal-card{ width:min(560px,92vw); background:#fff; border-radius:1rem; padding:1rem; box-shadow:0 20px 60px rgba(0,0,0,.25) }
-  /* 預覽與彈窗滾動修正 */
-  #taskModal .modal-card{ max-height:90vh; overflow-y:auto; -webkit-overflow-scrolling:touch; }
-  #previewImg{ width:100%; height:auto; max-height:16rem; object-fit:contain; }
 </style>
 </head>
 <body class="bg-orange-50/40 text-slate-800">
@@ -29,7 +23,7 @@
   <div class="w-12 h-12 rounded-2xl bg-[var(--accent)] text-white grid place-items-center font-extrabold">TKU</div>
   <div>
     <h1 class="text-2xl md:text-3xl font-extrabold">淡江大學定向運動闖關挑戰</h1>
-    <p class="text-slate-600">先測「自拍→上傳到 Google Drive」流程（FormData 版），避免 CORS。</p>
+    <p class="text-slate-600">自拍 → 上傳到 Google Drive；之後再接上 AI 模型。</p>
   </div>
   <div class="ms-auto flex gap-2">
     <button id="howBtn" class="px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50">規則說明</button>
@@ -130,7 +124,7 @@
         <p class="text-xs text-slate-500 mt-1">手機會直接開啟相機；請確保本人入鏡。</p>
       </div>
       <div id="previewWrap" class="mt-3 hidden">
-        <img id="previewImg" class="rounded-xl border border-slate-200" alt="預覽"/>
+        <img id="previewImg" class="max-h-64 max-w-full object-contain rounded-xl border border-slate-200" alt="預覽"/>
       </div>
       <div class="mt-3 flex flex-wrap gap-2">
         <button id="checkBtn" class="px-3 py-2 rounded-xl bg-[var(--accent)] text-white disabled:opacity-50" disabled>上傳到 Google Drive</button>
@@ -139,13 +133,17 @@
       <div id="resultBox" class="mt-3 hidden">
         <div id="resultText" class="text-sm"></div>
       </div>
+      <!-- 失敗改走內建頁 -->
+      <div id="fallbackBox" class="mt-3 hidden">
+        <button id="openWebAppBtn" class="px-3 py-2 rounded-xl bg-white border border-slate-200">改用內建上傳頁</button>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
-/* ======= 你的 Web App URL（請確認） ======= */
-const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyHjLdgXAkfoG5XUkMwOlJsJZ874eSgf-rOkzJtsugrYjsB0uxGa8oybeX1e2o7Vzcxcw/exec';
+/* ======= 你的 Web App URL（已換成你給的） ======= */
+const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyeOpL1BM0K5gMqpOswDBqkoKQO8UyRO2btVLNtKkVGb3Fyh-E4bjSxcZVx12sni1r2/exec';
 /* ========================================= */
 
 const POINTS = Array.from({length:25}, (_,i)=>({ id:i+1, label:`P${i+1}` })); // 只顯示編號；label 預留
@@ -179,7 +177,8 @@ function bindUI(){
   document.getElementById("howBtn").addEventListener("click", () => toggleHow(true));
   document.getElementById("idBtn").addEventListener("click", promptSID);
   document.getElementById("imageInput").addEventListener("change", handleFileChange);
-  document.getElementById("checkBtn").addEventListener("click", runUploadOnly_FormData);
+  document.getElementById("checkBtn").addEventListener("click", runUploadOnly);
+  document.getElementById("openWebAppBtn").addEventListener("click", openWebAppUploader);
 }
 
 function loadSID(){
@@ -204,6 +203,7 @@ function toggleTask(show){
     document.getElementById("imageInput").value = "";
     document.getElementById("previewWrap").classList.add("hidden");
     document.getElementById("resultBox").classList.add("hidden");
+    document.getElementById("fallbackBox").classList.add("hidden");
     document.getElementById("checkBtn").disabled = true;
     currentPoint = null;
   }
@@ -268,14 +268,16 @@ function handleFileChange(e){
   document.getElementById("previewImg").src = url;
   document.getElementById("previewWrap").classList.remove("hidden");
   document.getElementById("resultBox").classList.add("hidden");
+  document.getElementById("fallbackBox").classList.add("hidden");
   document.getElementById("checkBtn").disabled = false;
 }
 
-/* === FormData 版（不觸發 CORS preflight） === */
-async function runUploadOnly_FormData(){
+/* 上傳：先嘗試 multipart + Base64；若失敗，提供一鍵改走內建頁 */
+async function runUploadOnly(){
   const info = document.getElementById("resultText");
   const box  = document.getElementById("resultBox");
-  box.classList.remove("hidden");
+  const fb   = document.getElementById("fallbackBox");
+  box.classList.remove("hidden"); fb.classList.add("hidden");
 
   const sid = localStorage.getItem(SID_KEY) || "";
   if(!sid){ alert("請先設定學號"); return promptSID(); }
@@ -289,13 +291,12 @@ async function runUploadOnly_FormData(){
     return;
   }
 
-  info.textContent = "正在上傳到 Google Drive（FormData）…";
+  info.textContent = "正在上傳到 Google Drive…";
 
   try{
-    // 後備：把同一張圖轉成 dataURL（Base64），以便 GAS 端若抓不到 e.files.file 時仍可解析
-    const dataURL = await new Promise((resolve, reject)=>{
+    const fileBase64 = await new Promise((resolve, reject)=>{
       const fr = new FileReader();
-      fr.onload = () => resolve(fr.result);
+      fr.onload = () => resolve(fr.result); // dataURL
       fr.onerror = reject;
       fr.readAsDataURL(file);
     });
@@ -304,35 +305,44 @@ async function runUploadOnly_FormData(){
     fd.append('sid', sid);
     fd.append('pointId', currentPoint.id);
     fd.append('label', currentPoint.label);
-    fd.append('file', file, file.name);          // 主軌：multipart binary
-    fd.append('fileBase64', dataURL);            // 後備：base64
+    fd.append('file', file, file.name);           // multipart 主軌
+    fd.append('fileBase64', fileBase64);          // 後備：Base64
     fd.append('fileType', file.type || 'image/jpeg');
 
-    // 重要：不要加任何自訂 headers，避免 preflight
-    const res = await fetch(WEB_APP_URL, { method:'POST', body: fd });
+    const res = await fetch(WEB_APP_URL, { method:'POST', body: fd, redirect: 'follow' });
 
-    let json=null, text='';
-    try{ json = await res.clone().json(); }catch(_){ try{ text = await res.text(); }catch(__){} }
+    let json = null, text = '';
+    try { json = await res.clone().json(); } catch (_){ try { text = await res.text(); } catch(__){} }
 
     if (!res.ok) {
       info.innerHTML = `❌ 伺服器狀態 ${res.status}。<br><pre class="text-xs whitespace-pre-wrap">${text || '(無文字內容)'}</pre>`;
+      fb.classList.remove('hidden'); // 顯示「改用內建頁」按鈕
       return;
     }
 
     if (json && json.ok) {
-      info.innerHTML = `✅ 上傳完成！教師可於 Drive 檢核。<br><a class="text-blue-600 underline" target="_blank" href="${json.url}">在雲端開啟</a>`;
+      info.innerHTML = `✅ 上傳完成！<br><a class="text-blue-600 underline" target="_blank" href="${json.url}">在雲端開啟</a>　｜　<a class="text-blue-600 underline" target="_blank" href="${WEB_APP_URL}?action=view&id=${json.id}">內建預覽</a>`;
       addProgress(currentPoint.id);
     } else if (text && text.startsWith('{') && text.includes('"ok":true')) {
       info.innerHTML = `✅ 上傳完成！（解析例外，但伺服器回傳成功）`;
       addProgress(currentPoint.id);
     } else {
       info.innerHTML = `⚠️ 上傳失敗。<br><pre class="text-xs whitespace-pre-wrap">${text || JSON.stringify(json) || '（無明確錯誤）'}</pre>`;
+      fb.classList.remove('hidden');
     }
-
   }catch(err){
     console.error(err);
     info.innerHTML = `⚠️ 網路/跨網域例外：${String(err)}`;
+    document.getElementById("fallbackBox").classList.remove("hidden");
   }
+}
+
+/* 失敗時：直接開你的一體式內建上傳頁（最穩） */
+function openWebAppUploader(){
+  const sid = localStorage.getItem(SID_KEY) || '';
+  const pid = currentPoint ? currentPoint.id : 1;
+  // 直接開 /exec（頁面上可手動填學號與選檔上傳）
+  window.open(WEB_APP_URL, '_blank');
 }
 </script>
 </body>
