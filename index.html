@@ -24,7 +24,7 @@
   <div class="w-12 h-12 rounded-2xl bg-[var(--accent)] text-white grid place-items-center font-extrabold">TKU</div>
   <div>
     <h1 class="text-2xl md:text-3xl font-extrabold">淡江大學定向運動闖關挑戰</h1>
-    <p class="text-slate-600">自拍 → 送到 Google Drive；若跨網域被擋，自動用新分頁提交。</p>
+    <p class="text-slate-600">自拍 → 送到 Google Drive；被跨網域擋時自動用新分頁提交。</p>
   </div>
   <div class="ms-auto flex gap-2">
     <button id="howBtn" class="px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50">規則說明</button>
@@ -51,7 +51,7 @@
         <button id="startBtn" class="px-3 py-2 rounded-xl bg-[var(--accent)] text-white hover:opacity-90">開始挑戰</button>
         <button id="badgesBtn" class="px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50">我的徽章</button>
       </div>
-      <p class="muted mt-3">＊如被瀏覽器擋彈出視窗，請允許本頁開啟新分頁。</p>
+      <p class="muted mt-3">＊若彈出視窗被擋，請允許本頁開啟新分頁。</p>
     </div>
   </div>
 </section>
@@ -121,7 +121,8 @@
     </div>
     <div class="mt-3">
       <div class="rounded-xl border border-dashed border-slate-300 p-3">
-        <input id="imageInput" type="file" accept="image/*;capture=camera" class="block w-full text-sm" />
+        <!-- 修正點：一定要有 name="file" 才會跟著表單送出 -->
+        <input id="imageInput" name="file" type="file" accept="image/*;capture=camera" class="block w-full text-sm" />
         <p class="text-xs text-slate-500 mt-1">手機會直接開啟相機；請確保本人入鏡。</p>
       </div>
       <div id="previewWrap" class="mt-3 hidden">
@@ -158,11 +159,7 @@ const SID_KEY = "tku_orienteering_sid";
 
 /* 初始化 */
 document.addEventListener("DOMContentLoaded", () => {
-  renderPOIList();
-  renderBadges();
-  updateProgressUI();
-  bindUI();
-  loadSID();
+  renderPOIList(); renderBadges(); updateProgressUI(); bindUI(); loadSID();
   setTimeout(()=>toggleHow(true), 400);
 });
 
@@ -277,7 +274,7 @@ function handleFileChange(e){
   document.getElementById("checkBtn").disabled = false;
 }
 
-/* 這版：預開新視窗 + 隱藏表單提交（完全繞過 CORS 與彈窗阻擋） */
+/* 預開新視窗 + 隱藏表單提交（完全繞過 CORS 與彈窗阻擋） */
 async function runUploadOnly(){
   const info = document.getElementById("resultText");
   const box  = document.getElementById("resultBox");
@@ -292,7 +289,7 @@ async function runUploadOnly(){
   if(!file){ info.textContent = "請先選擇照片"; return; }
   if(file.size > 20*1024*1024){ info.textContent = "檔案過大（>20MB）"; return; }
 
-  // 後備欄位：讀成 dataURL（GAS 會同時處理 multipart 與 Base64）
+  // 後備：讀成 dataURL（後端同時支援 multipart 與 base64）
   const dataURL = await new Promise((resolve,reject)=>{
     const r = new FileReader();
     r.onload = () => resolve(r.result);
@@ -300,7 +297,7 @@ async function runUploadOnly(){
     r.readAsDataURL(file);
   });
 
-  // 先以「使用者手勢」預開一個視窗，避免被當作彈出視窗擋掉
+  // 以使用者手勢預開一個視窗，避免被當作彈出視窗阻擋
   const winName = 'tku_uploader';
   const popup = window.open('about:blank', winName);
   if (!popup) {
@@ -326,14 +323,14 @@ async function runUploadOnly(){
   addHidden("label", currentPoint.label);
   addHidden("fileBase64", dataURL);
   addHidden("fileType", file.type || "image/jpeg");
-  // addHidden("format","json"); // 想看 JSON 回傳可打開
+  // addHidden("format","json"); // 想看 JSON 回傳時可打開
 
-  // 把 <input type="file"> 暫移進表單，一起送 multipart
+  // 把 <input type="file" name="file"> 暫移進表單，一起送 multipart
   const placeholder = document.createElement("span");
   fileEl.parentNode.insertBefore(placeholder, fileEl);
   form.appendChild(fileEl);
 
-  // 送出（新分頁顯示 GAS 成功頁：Upload OK / 內建預覽）
+  // 送出（新分頁顯示 Upload OK / 內建預覽）
   form.submit();
   popup.focus();
 
@@ -345,10 +342,8 @@ async function runUploadOnly(){
   addProgress(currentPoint.id);
 }
 
-/* 失敗保險：直接開你的 /exec 內建上傳頁 */
-function openWebAppUploader(){
-  window.open(WEB_APP_URL, '_blank');
-}
+/* 失敗保險：直接開 /exec 內建上傳頁 */
+function openWebAppUploader(){ window.open(WEB_APP_URL, '_blank'); }
 </script>
 </body>
 </html>
