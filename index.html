@@ -3,21 +3,17 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>淡江大學定向運動闖關挑戰（最終穩定上傳版）</title>
+<title>淡江大學定向運動闖關挑戰（同分頁顯示回應版）</title>
 <link rel="stylesheet" href="./styles.css" />
 <style>
   :root { --accent:#f97316; --ok:#22c55e; }
-  .pill{
-    width:72px;height:72px;display:flex;align-items:center;justify-content:center;
-    border-radius:0.9rem;background:var(--accent);color:#fff;font-weight:800;font-size:1.1rem
-  }
+  .pill{ width:72px;height:72px;display:flex;align-items:center;justify-content:center;border-radius:.9rem;background:var(--accent);color:#fff;font-weight:800;font-size:1.1rem }
   .pill.done{ background:var(--ok); }
-  .badge { border:1px dashed #e5e7eb; border-radius:.75rem; padding:.6rem; text-align:center; font-size:.85rem }
-  .badge.done{ border-style:solid; background:#f0fdf4; }
-  .modal-mask{ position:fixed; inset:0; background:rgba(0,0,0,.35); display:none; align-items:center; justify-content:center; z-index:50; }
-  .modal-card{ width:min(560px,92vw); background:#fff; border-radius:1rem; padding:1rem; box-shadow:0 20px 60px rgba(0,0,0,.25) }
+  .badge{ border:1px dashed #e5e7eb;border-radius:.75rem;padding:.6rem;text-align:center;font-size:.85rem }
+  .badge.done{ border-style:solid;background:#f0fdf4 }
+  .modal-mask{ position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:50 }
+  .modal-card{ width:min(560px,92vw);background:#fff;border-radius:1rem;padding:1rem;box-shadow:0 20px 60px rgba(0,0,0,.25) }
   .muted{ color:#64748b;font-size:.85rem }
-  .actions button{ cursor:pointer }
 </style>
 </head>
 <body class="bg-orange-50/40 text-slate-800">
@@ -25,9 +21,9 @@
   <div class="w-12 h-12 rounded-2xl bg-[var(--accent)] text-white grid place-items-center font-extrabold">TKU</div>
   <div>
     <h1 class="text-2xl md:text-3xl font-extrabold">淡江大學定向運動闖關挑戰</h1>
-    <p class="text-slate-600">自拍 → 送到 Google Drive；跨網域狀況用「新分頁」提交最穩。</p>
+    <p class="text-slate-600">自拍 → 直接送至 Google Drive；此版會在「同分頁」顯示伺服器回應。</p>
   </div>
-  <div class="ms-auto flex gap-2 actions">
+  <div class="ms-auto flex gap-2">
     <button id="howBtn" class="px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50">規則說明</button>
     <button id="idBtn"  class="px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50">設定學號</button>
   </div>
@@ -48,11 +44,11 @@
     </div>
     <div class="bg-white rounded-2xl p-4 border border-slate-200">
       <h2 class="font-bold mb-2">快速動作</h2>
-      <div class="flex flex-wrap gap-2 actions">
+      <div class="flex flex-wrap gap-2">
         <button id="startBtn" class="px-3 py-2 rounded-xl bg-[var(--accent)] text-white hover:opacity-90">開始挑戰</button>
         <button id="badgesBtn" class="px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50">我的徽章</button>
       </div>
-      <p class="muted mt-3">＊若新分頁被擋，請允許本頁開啟彈出視窗。</p>
+      <p class="muted mt-3">＊此版為除錯用：上傳結果會直接在本分頁顯示。</p>
     </div>
   </div>
 </section>
@@ -60,8 +56,8 @@
 <section class="max-w-6xl mx-auto px-4 mt-6">
   <div class="bg-white rounded-2xl p-3 border border-slate-200">
     <h2 class="font-bold mb-3">校園地圖（參考）</h2>
-    <img src="assets/tku_map.jpg" class="w-full h-auto rounded-xl border border-slate-200"
-         onerror="this.nextElementSibling.classList.remove('hidden')" alt="map"/>
+    <img src="assets/tku_map.jpg" class="w-full h-auto rounded-xl border border-slate-200" alt="map"
+         onerror="this.nextElementSibling.classList.remove('hidden')" />
     <div class="hidden mt-2 text-sm text-red-600">找不到地圖：<code>assets/tku_map.jpg</code></div>
   </div>
 </section>
@@ -69,8 +65,8 @@
 <section class="max-w-6xl mx-auto px-4 mt-6">
   <div class="bg-white rounded-2xl p-3 border border-slate-200">
     <h2 class="font-bold mb-3">拍照目標一覽（#1–#25）</h2>
-    <img src="assets/tku_targets.jpg" class="w-full h-auto rounded-xl border border-slate-200"
-         onerror="this.nextElementSibling.classList.remove('hidden')" alt="targets"/>
+    <img src="assets/tku_targets.jpg" class="w-full h-auto rounded-xl border border-slate-200" alt="targets"
+         onerror="this.nextElementSibling.classList.remove('hidden')" />
     <div class="hidden mt-2 text-sm text-red-600">找不到拼圖：<code>assets/tku_targets.jpg</code></div>
     <p class="text-xs text-slate-500 mt-2">只顯示編號，不提供中文提示。</p>
   </div>
@@ -103,14 +99,14 @@
     <ol class="list-decimal ps-5 space-y-1 text-slate-700">
       <li>在關卡列表點選編號（#1~#25）。</li>
       <li>自拍並拍下該編號的標的物。</li>
-      <li>按「上傳到 Google Drive」後，會在新分頁顯示結果（Drive 連結 + 內建預覽）。</li>
+      <li>按「上傳到 Google Drive」後，會在本分頁直接顯示結果。</li>
       <li>進度儲存在本機；集滿 25 枚徽章完成挑戰。</li>
     </ol>
     <div class="mt-4 text-right"><button class="px-3 py-2 rounded-xl bg-[var(--accent)] text-white" onclick="toggleHow(false)">我知道了</button></div>
   </div>
 </div>
 
-<!-- 上傳 Modal（表單固定在這裡；不搬動 input） -->
+<!-- 上傳 Modal（表單固定；不搬動 input） -->
 <div id="taskModal" class="modal-mask">
   <div class="modal-card">
     <div class="flex items-start justify-between gap-3">
@@ -121,7 +117,7 @@
       <button class="text-slate-500" onclick="toggleTask(false)">✕</button>
     </div>
 
-    <form id="uploadForm" method="POST" enctype="multipart/form-data" target="_blank">
+    <form id="uploadForm" method="POST" enctype="multipart/form-data" target="_self">
       <div class="mt-3">
         <div class="rounded-xl border border-dashed border-slate-300 p-3">
           <!-- 關鍵：一定要 name="file" -->
@@ -131,18 +127,13 @@
         <div id="previewWrap" class="mt-3 hidden">
           <img id="previewImg" class="max-h-64 max-w-full object-contain rounded-xl border border-slate-200" alt="預覽"/>
         </div>
-        <div class="mt-3 flex flex-wrap gap-2 actions">
+        <div class="mt-3 flex flex-wrap gap-2">
           <button id="checkBtn" type="button" class="px-3 py-2 rounded-xl bg-[var(--accent)] text-white disabled:opacity-50" disabled>
             上傳到 Google Drive
           </button>
           <button type="button" class="px-3 py-2 rounded-xl bg-white border border-slate-200" onclick="toggleTask(false)">稍後再試</button>
         </div>
-        <div id="resultBox" class="mt-3 hidden">
-          <div id="resultText" class="text-sm"></div>
-        </div>
-        <div id="fallbackBox" class="mt-3 hidden actions">
-          <button id="openWebAppBtn" type="button" class="px-3 py-2 rounded-xl bg-white border border-slate-200">改用內建上傳頁</button>
-        </div>
+        <div id="resultBox" class="mt-3 hidden"><div id="resultText" class="text-sm"></div></div>
       </div>
 
       <!-- 隱藏欄位（由 JS 填入） -->
@@ -159,6 +150,7 @@
 <script>
 /* ======= 你的 Web App URL（正式部署 /exec） ======= */
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyeOpL1BM0K5gMqpOswDBqkoKQO8UyRO2btVLNtKkVGb3Fyh-E4bjSxcZVx12sni1r2/exec';
+const SUBMIT_IN_SAME_TAB = true; // 同分頁顯示回應（除錯用）
 /* ========================================= */
 
 const POINTS = Array.from({length:25}, (_,i)=>({ id:i+1, label:`P${i+1}` }));
@@ -168,10 +160,7 @@ const SID_KEY = "tku_orienteering_sid";
 
 /* 初始化 */
 document.addEventListener("DOMContentLoaded", () => {
-  // 保險：把表單 action 設成常數（避免舊快取）
-  const form = document.getElementById('uploadForm');
-  form.action = WEB_APP_URL;
-
+  document.getElementById('uploadForm').action = WEB_APP_URL;
   renderPOIList(); renderBadges(); updateProgressUI(); bindUI(); loadSID();
   setTimeout(()=>toggleHow(true), 400);
 });
@@ -193,7 +182,6 @@ function bindUI(){
   document.getElementById("idBtn").addEventListener("click", promptSID);
   document.getElementById("imageInput").addEventListener("change", handleFileChange);
   document.getElementById("checkBtn").addEventListener("click", runUploadOnly);
-  document.getElementById("openWebAppBtn").addEventListener("click", openWebAppUploader);
 }
 
 function loadSID(){
@@ -218,7 +206,6 @@ function toggleTask(show){
     document.getElementById("imageInput").value = "";
     document.getElementById("previewWrap").classList.add("hidden");
     document.getElementById("resultBox").classList.add("hidden");
-    document.getElementById("fallbackBox").classList.add("hidden");
     document.getElementById("checkBtn").disabled = true;
     currentPoint = null;
   }
@@ -283,16 +270,14 @@ function handleFileChange(e){
   document.getElementById("previewImg").src = url;
   document.getElementById("previewWrap").classList.remove("hidden");
   document.getElementById("resultBox").classList.add("hidden");
-  document.getElementById("fallbackBox").classList.add("hidden");
   document.getElementById("checkBtn").disabled = false;
 }
 
-/* 穩定：預開新視窗 + 固定表單直接 submit（不搬動 input） */
+/* 同分頁提交：一定能看到伺服器回應 */
 async function runUploadOnly(){
   const info = document.getElementById("resultText");
   const box  = document.getElementById("resultBox");
-  const fb   = document.getElementById("fallbackBox");
-  box.classList.remove("hidden"); fb.classList.add("hidden");
+  box.classList.remove("hidden");
 
   const sid = localStorage.getItem(SID_KEY) || "";
   if(!sid){ alert("請先設定學號"); return promptSID(); }
@@ -302,22 +287,10 @@ async function runUploadOnly(){
   if(!file){ info.textContent = "請先選擇照片"; return; }
   if(file.size > 20*1024*1024){ info.textContent = "檔案過大（>20MB）"; return; }
 
-  // 後備：讀成 dataURL（後端同時支援 multipart 與 base64）
+  // 產生 Base64 後備（後端同時支援 multipart 與 base64）
   const dataURL = await new Promise((resolve,reject)=>{
-    const r = new FileReader();
-    r.onload = () => resolve(r.result);
-    r.onerror = reject;
-    r.readAsDataURL(file);
+    const r = new FileReader(); r.onload = ()=>resolve(r.result); r.onerror = reject; r.readAsDataURL(file);
   });
-
-  // 以使用者手勢預開視窗，避免被阻擋
-  const winName = 'tku_uploader';
-  const popup = window.open('about:blank', winName);
-  if (!popup) {
-    info.innerHTML = "⚠️ 瀏覽器阻擋了新分頁，請允許本頁開啟彈出視窗或按下方「改用內建上傳頁」。";
-    fb.classList.remove('hidden');
-    return;
-  }
 
   // 填隱藏欄位
   document.getElementById('hfSid').value   = sid;
@@ -326,19 +299,17 @@ async function runUploadOnly(){
   document.getElementById('hfB64').value   = dataURL;
   document.getElementById('hfType').value  = file.type || 'image/jpeg';
 
-  // 送表單到新分頁
+  // 直接在本分頁送出，必定看到 GAS 的回應頁（成功會有 Upload OK）
   const form = document.getElementById('uploadForm');
-  form.action = WEB_APP_URL;   // 保險再設一次
-  form.target = winName;
+  form.action = WEB_APP_URL;
+  form.target = SUBMIT_IN_SAME_TAB ? '_self' : 'tku_uploader';
   form.submit();
-  popup.focus();
 
-  info.innerHTML = "📤 已送出；結果會在新分頁顯示（若沒看到，請允許彈出視窗）。";
-  addProgress(currentPoint.id);
+  info.innerHTML = "📤 已送出，正在顯示伺服器回應…";
 }
 
-/* 失敗保險：直接開 /exec 內建上傳頁 */
-function openWebAppUploader(){ window.open(WEB_APP_URL, '_blank'); }
+/* 進度工具 */
+function getProgressSet(){ try{ return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]")); } catch{ return new Set(); } }
 </script>
 </body>
 </html>
