@@ -1,19 +1,21 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>淡江大學定向運動闖關挑戰（同分頁顯示回應版）</title>
-<link rel="stylesheet" href="./styles.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>淡江大學定向運動闖關挑戰（隱藏 iframe 上傳）</title>
+<link rel="stylesheet" href="./styles.css">
 <style>
-  :root { --accent:#f97316; --ok:#22c55e; }
-  .pill{ width:72px;height:72px;display:flex;align-items:center;justify-content:center;border-radius:.9rem;background:var(--accent);color:#fff;font-weight:800;font-size:1.1rem }
-  .pill.done{ background:var(--ok); }
-  .badge{ border:1px dashed #e5e7eb;border-radius:.75rem;padding:.6rem;text-align:center;font-size:.85rem }
-  .badge.done{ border-style:solid;background:#f0fdf4 }
-  .modal-mask{ position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:50 }
-  .modal-card{ width:min(560px,92vw);background:#fff;border-radius:1rem;padding:1rem;box-shadow:0 20px 60px rgba(0,0,0,.25) }
-  .muted{ color:#64748b;font-size:.85rem }
+  :root { --accent:#f97316; --ok:#22c55e }
+  .pill{width:72px;height:72px;display:flex;align-items:center;justify-content:center;border-radius:.9rem;background:var(--accent);color:#fff;font-weight:800}
+  .pill.done{background:var(--ok)}
+  .badge{border:1px dashed #e5e7eb;border-radius:.75rem;padding:.6rem;text-align:center;font-size:.85rem}
+  .badge.done{border-style:solid;background:#f0fdf4}
+  .modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.35);display:none;align-items:center;justify-content:center;z-index:50}
+  .modal-card{width:min(560px,92vw);background:#fff;border-radius:1rem;padding:1rem;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+  .muted{color:#64748b;font-size:.85rem}
+  /* 隱藏 iframe */
+  #upload_iframe{position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;border:0}
 </style>
 </head>
 <body class="bg-orange-50/40 text-slate-800">
@@ -21,11 +23,11 @@
   <div class="w-12 h-12 rounded-2xl bg-[var(--accent)] text-white grid place-items-center font-extrabold">TKU</div>
   <div>
     <h1 class="text-2xl md:text-3xl font-extrabold">淡江大學定向運動闖關挑戰</h1>
-    <p class="text-slate-600">自拍 → 直接送至 Google Drive；此版會在「同分頁」顯示伺服器回應。</p>
+    <p class="text-slate-600">不上新分頁、不彈視窗；用隱藏 iframe 上傳並接收回傳訊息。</p>
   </div>
   <div class="ms-auto flex gap-2">
-    <button id="howBtn" class="px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50">規則說明</button>
-    <button id="idBtn"  class="px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50">設定學號</button>
+    <button id="howBtn" class="px-3 py-2 rounded-xl bg-white border border-slate-200">規則說明</button>
+    <button id="idBtn"  class="px-3 py-2 rounded-xl bg-white border border-slate-200">設定學號</button>
   </div>
 </header>
 
@@ -45,10 +47,10 @@
     <div class="bg-white rounded-2xl p-4 border border-slate-200">
       <h2 class="font-bold mb-2">快速動作</h2>
       <div class="flex flex-wrap gap-2">
-        <button id="startBtn" class="px-3 py-2 rounded-xl bg-[var(--accent)] text-white hover:opacity-90">開始挑戰</button>
-        <button id="badgesBtn" class="px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50">我的徽章</button>
+        <button id="startBtn" class="px-3 py-2 rounded-xl bg-[var(--accent)] text-white">開始挑戰</button>
+        <button id="badgesBtn" class="px-3 py-2 rounded-xl bg-white border border-slate-200">我的徽章</button>
       </div>
-      <p class="muted mt-3">＊此版為除錯用：上傳結果會直接在本分頁顯示。</p>
+      <p class="muted mt-3">若無回應，請確認你已用最新的 /exec，且後端已按「部署」。</p>
     </div>
   </div>
 </section>
@@ -57,8 +59,8 @@
   <div class="bg-white rounded-2xl p-3 border border-slate-200">
     <h2 class="font-bold mb-3">校園地圖（參考）</h2>
     <img src="assets/tku_map.jpg" class="w-full h-auto rounded-xl border border-slate-200" alt="map"
-         onerror="this.nextElementSibling.classList.remove('hidden')" />
-    <div class="hidden mt-2 text-sm text-red-600">找不到地圖：<code>assets/tku_map.jpg</code></div>
+         onerror="this.nextElementSibling.classList.remove('hidden')">
+    <div class="hidden mt-2 text-sm text-red-600">找不到地圖：assets/tku_map.jpg</div>
   </div>
 </section>
 
@@ -66,8 +68,8 @@
   <div class="bg-white rounded-2xl p-3 border border-slate-200">
     <h2 class="font-bold mb-3">拍照目標一覽（#1–#25）</h2>
     <img src="assets/tku_targets.jpg" class="w-full h-auto rounded-xl border border-slate-200" alt="targets"
-         onerror="this.nextElementSibling.classList.remove('hidden')" />
-    <div class="hidden mt-2 text-sm text-red-600">找不到拼圖：<code>assets/tku_targets.jpg</code></div>
+         onerror="this.nextElementSibling.classList.remove('hidden')">
+    <div class="hidden mt-2 text-sm text-red-600">找不到拼圖：assets/tku_targets.jpg</div>
     <p class="text-xs text-slate-500 mt-2">只顯示編號，不提供中文提示。</p>
   </div>
 </section>
@@ -93,20 +95,19 @@
 <div id="howModal" class="modal-mask">
   <div class="modal-card">
     <div class="flex items-center justify-between mb-2">
-      <h3 class="font-bold text-lg">遊戲規則（目前為上傳測試模式）</h3>
+      <h3 class="font-bold text-lg">遊戲規則</h3>
       <button class="text-slate-500" onclick="toggleHow(false)">✕</button>
     </div>
     <ol class="list-decimal ps-5 space-y-1 text-slate-700">
       <li>在關卡列表點選編號（#1~#25）。</li>
       <li>自拍並拍下該編號的標的物。</li>
-      <li>按「上傳到 Google Drive」後，會在本分頁直接顯示結果。</li>
-      <li>進度儲存在本機；集滿 25 枚徽章完成挑戰。</li>
+      <li>按「上傳到 Google Drive」，不跳頁；等上方提示變成綠色成功。</li>
     </ol>
     <div class="mt-4 text-right"><button class="px-3 py-2 rounded-xl bg-[var(--accent)] text-white" onclick="toggleHow(false)">我知道了</button></div>
   </div>
 </div>
 
-<!-- 上傳 Modal（表單固定；不搬動 input） -->
+<!-- 上傳 Modal（固定表單，target 指向隱藏 iframe） -->
 <div id="taskModal" class="modal-mask">
   <div class="modal-card">
     <div class="flex items-start justify-between gap-3">
@@ -117,7 +118,10 @@
       <button class="text-slate-500" onclick="toggleTask(false)">✕</button>
     </div>
 
-    <form id="uploadForm" method="POST" enctype="multipart/form-data" target="_self">
+    <!-- 隱藏 iframe：接收回傳（不跳頁） -->
+    <iframe id="upload_iframe" name="upload_iframe"></iframe>
+
+    <form id="uploadForm" method="POST" enctype="multipart/form-data" target="upload_iframe">
       <div class="mt-3">
         <div class="rounded-xl border border-dashed border-slate-300 p-3">
           <!-- 關鍵：一定要 name="file" -->
@@ -125,7 +129,7 @@
           <p class="text-xs text-slate-500 mt-1">手機會直接開啟相機；請確保本人入鏡。</p>
         </div>
         <div id="previewWrap" class="mt-3 hidden">
-          <img id="previewImg" class="max-h-64 max-w-full object-contain rounded-xl border border-slate-200" alt="預覽"/>
+          <img id="previewImg" class="max-h-64 max-w-full object-contain rounded-xl border border-slate-200" alt="預覽">
         </div>
         <div class="mt-3 flex flex-wrap gap-2">
           <button id="checkBtn" type="button" class="px-3 py-2 rounded-xl bg-[var(--accent)] text-white disabled:opacity-50" disabled>
@@ -136,7 +140,7 @@
         <div id="resultBox" class="mt-3 hidden"><div id="resultText" class="text-sm"></div></div>
       </div>
 
-      <!-- 隱藏欄位（由 JS 填入） -->
+      <!-- 隱藏欄位（由 JS 填入；Base64 為後備） -->
       <input type="hidden" name="action" value="upload">
       <input type="hidden" name="sid" id="hfSid">
       <input type="hidden" name="pointId" id="hfPoint">
@@ -148,10 +152,8 @@
 </div>
 
 <script>
-/* ======= 你的 Web App URL（正式部署 /exec） ======= */
+/* === 你的 Apps Script Web App（/exec） === */
 const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbyeOpL1BM0K5gMqpOswDBqkoKQO8UyRO2btVLNtKkVGb3Fyh-E4bjSxcZVx12sni1r2/exec';
-const SUBMIT_IN_SAME_TAB = true; // 同分頁顯示回應（除錯用）
-/* ========================================= */
 
 const POINTS = Array.from({length:25}, (_,i)=>({ id:i+1, label:`P${i+1}` }));
 let currentPoint = null;
@@ -162,7 +164,22 @@ const SID_KEY = "tku_orienteering_sid";
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById('uploadForm').action = WEB_APP_URL;
   renderPOIList(); renderBadges(); updateProgressUI(); bindUI(); loadSID();
-  setTimeout(()=>toggleHow(true), 400);
+
+  // 接收後端 postMessage（來自隱藏 iframe）
+  window.addEventListener('message', (ev) => {
+    const data = ev.data || {};
+    if (data && data.source === 'tku-uploader') {
+      const info = document.getElementById('resultText');
+      const box  = document.getElementById('resultBox');
+      box.classList.remove('hidden');
+      if (data.ok) {
+        info.innerHTML = `✅ 上傳成功！<br><a class="text-blue-600 underline" target="_blank" href="${data.url}">在雲端開啟</a>`;
+        addProgress(Number(data.pointId || currentPoint?.id));
+      } else {
+        info.innerHTML = `⚠️ 上傳失敗：${data.error || '未知錯誤'}`;
+      }
+    }
+  }, false);
 });
 
 function bindUI(){
@@ -173,10 +190,7 @@ function bindUI(){
     window.scrollTo({ top: document.getElementById("badgeGrid").offsetTop - 16, behavior:"smooth" });
   });
   document.getElementById("resetBtn").addEventListener("click", () => {
-    if(confirm("確定要清除本機進度？")) {
-      localStorage.removeItem(STORAGE_KEY);
-      renderPOIList(); renderBadges(); updateProgressUI();
-    }
+    if(confirm("確定要清除本機進度？")) { localStorage.removeItem(STORAGE_KEY); renderPOIList(); renderBadges(); updateProgressUI(); }
   });
   document.getElementById("howBtn").addEventListener("click", () => toggleHow(true));
   document.getElementById("idBtn").addEventListener("click", promptSID);
@@ -187,15 +201,12 @@ function bindUI(){
 function loadSID(){
   const sid = localStorage.getItem(SID_KEY) || "";
   document.getElementById("sidVal").textContent = sid || "（未設定）";
-  if(!sid) setTimeout(promptSID, 500);
+  if(!sid) setTimeout(promptSID, 300);
 }
 function promptSID(){
   const old = localStorage.getItem(SID_KEY) || "";
   const v = prompt("請輸入你的學號（或識別 ID）：", old);
-  if (v !== null) {
-    localStorage.setItem(SID_KEY, v.trim());
-    document.getElementById("sidVal").textContent = v.trim() || "（未設定）";
-  }
+  if (v !== null) { localStorage.setItem(SID_KEY, v.trim()); document.getElementById("sidVal").textContent = v.trim() || "（未設定）"; }
 }
 
 function toggleHow(show){ document.getElementById("howModal").style.display = show ? "flex" : "none"; }
@@ -233,11 +244,8 @@ function renderBadges(){
   POINTS.forEach(p=>{
     const card = document.createElement("div");
     card.className = "badge " + (doneSet.has(p.id) ? "done" : "");
-    card.innerHTML = `
-      <div class="font-bold">#${p.id}</div>
-      <div class="mt-2">
-        ${doneSet.has(p.id)?'<span class="text-green-600 text-sm">✅ 已獲得</span>':'<span class="text-slate-400 text-sm">🔒 未解鎖</span>'}
-      </div>`;
+    card.innerHTML = `<div class="font-bold">#${p.id}</div>
+                      <div class="mt-2">${doneSet.has(p.id)?'✅ 已獲得':'🔒 未解鎖'}</div>`;
     grid.appendChild(card);
   });
 }
@@ -245,52 +253,37 @@ function renderBadges(){
 /* 進度 */
 function getProgressSet(){ try{ return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]")); } catch{ return new Set(); } }
 function setProgressSet(s){ localStorage.setItem(STORAGE_KEY, JSON.stringify(Array.from(s))); }
-function addProgress(id){
-  const s = getProgressSet(); s.add(id); setProgressSet(s);
-  renderPOIList(); renderBadges(); updateProgressUI();
-}
-function updateProgressUI(){
-  const count = getProgressSet().size;
-  const percent = Math.round((count / POINTS.length) * 100);
-  document.getElementById("progressBar").style.width = percent + "%";
-  document.getElementById("progressText").textContent = `已完成 ${count} / ${POINTS.length}`;
+function addProgress(id){ const s = getProgressSet(); s.add(id); setProgressSet(s); renderPOIList(); renderBadges(); updateProgressUI(); }
+function updateProgressUI(){ const c=getProgressSet().size; const p=Math.round(c/POINTS.length*100);
+  document.getElementById("progressBar").style.width = p + "%";
+  document.getElementById("progressText").textContent = `已完成 ${c} / ${POINTS.length}`;
 }
 
 /* 任務流程 */
-function openTask(p){
-  currentPoint = p;
-  document.getElementById("taskTitle").textContent = `#${p.id}`;
-  document.getElementById("taskSubtitle").textContent = `請自拍並拍下此編號的標的物（目前不驗證 AI）`;
-  toggleTask(true);
-}
+function openTask(p){ currentPoint=p; document.getElementById("taskTitle").textContent=`#${p.id}`; document.getElementById("taskSubtitle").textContent=`請自拍並拍下此編號的標的物`; toggleTask(true); }
 function handleFileChange(e){
-  const file = e.target.files[0];
-  if(!file) return;
-  const url = URL.createObjectURL(file);
-  document.getElementById("previewImg").src = url;
+  const f = e.target.files[0]; if(!f) return;
+  document.getElementById("previewImg").src = URL.createObjectURL(f);
   document.getElementById("previewWrap").classList.remove("hidden");
   document.getElementById("resultBox").classList.add("hidden");
-  document.getElementById("checkBtn").disabled = false;
+  document.getElementById("checkBtn").disabled=false;
 }
 
-/* 同分頁提交：一定能看到伺服器回應 */
+/* 提交到隱藏 iframe；同時附上 Base64 後備（後端二選一） */
 async function runUploadOnly(){
-  const info = document.getElementById("resultText");
-  const box  = document.getElementById("resultBox");
-  box.classList.remove("hidden");
+  const info = document.getElementById("resultText"); const box=document.getElementById("resultBox");
+  box.classList.remove("hidden"); info.textContent="正在上傳到 Google Drive…";
 
   const sid = localStorage.getItem(SID_KEY) || "";
   if(!sid){ alert("請先設定學號"); return promptSID(); }
 
   const fileEl = document.getElementById("imageInput");
   const file = fileEl.files[0];
-  if(!file){ info.textContent = "請先選擇照片"; return; }
-  if(file.size > 20*1024*1024){ info.textContent = "檔案過大（>20MB）"; return; }
+  if(!file){ info.textContent="請先選擇照片"; return; }
+  if(file.size > 20*1024*1024){ info.textContent="檔案過大（>20MB）"; return; }
 
-  // 產生 Base64 後備（後端同時支援 multipart 與 base64）
-  const dataURL = await new Promise((resolve,reject)=>{
-    const r = new FileReader(); r.onload = ()=>resolve(r.result); r.onerror = reject; r.readAsDataURL(file);
-  });
+  // 產生 Base64 後備
+  const dataURL = await new Promise((ok,ng)=>{ const r=new FileReader(); r.onload=()=>ok(r.result); r.onerror=ng; r.readAsDataURL(file); });
 
   // 填隱藏欄位
   document.getElementById('hfSid').value   = sid;
@@ -299,17 +292,11 @@ async function runUploadOnly(){
   document.getElementById('hfB64').value   = dataURL;
   document.getElementById('hfType').value  = file.type || 'image/jpeg';
 
-  // 直接在本分頁送出，必定看到 GAS 的回應頁（成功會有 Upload OK）
+  // 送出（target=upload_iframe，不會跳頁）
   const form = document.getElementById('uploadForm');
   form.action = WEB_APP_URL;
-  form.target = SUBMIT_IN_SAME_TAB ? '_self' : 'tku_uploader';
   form.submit();
-
-  info.innerHTML = "📤 已送出，正在顯示伺服器回應…";
 }
-
-/* 進度工具 */
-function getProgressSet(){ try{ return new Set(JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]")); } catch{ return new Set(); } }
 </script>
 </body>
 </html>
